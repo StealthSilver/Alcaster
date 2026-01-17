@@ -1,3 +1,3 @@
 # Alcaster
 
-a organization flow application like athenium
+this is the decentralised family tree applciation made on solana
