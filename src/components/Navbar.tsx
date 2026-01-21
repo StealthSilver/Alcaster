@@ -16,9 +16,13 @@ export const Navbar = () => {
         <div className="flex items-center justify-between rounded-full border border-white/20 bg-black/40 backdrop-blur-xl px-6 py-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <span className="text-xl font-semibold text-white tracking-tight">
-              Alcaster
-            </span>
+            <Image
+              src="/Alcaster-light.svg"
+              alt="Alcaster"
+              width={120}
+              height={24}
+              className="h-6 w-auto"
+            />
           </Link>
 
           {/* Navigation Links */}
