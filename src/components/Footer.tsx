@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Github, Twitter, Linkedin, Mail } from "lucide-react";
+import { Github, Linkedin, Mail } from "lucide-react";
+import { X } from "lucide-react";
 
 const footerLinks = {
   product: [
@@ -33,10 +34,14 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-  { icon: Github, href: "https://github.com", label: "GitHub" },
-  { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
-  { icon: Mail, href: "mailto:hello@alcaster.com", label: "Email" },
+  { icon: X, href: "https://x.com/silver_srs", label: "X" },
+  { icon: Github, href: "https://github.com/StealthSilver", label: "GitHub" },
+  {
+    icon: Linkedin,
+    href: "https://www.linkedin.com/in/rajat-saraswat-0491a3259/",
+    label: "LinkedIn",
+  },
+  { icon: Mail, href: "mailto:rajat.saraswat.0409@gmail.com", label: "Email" },
 ];
 
 export const Footer = () => {
