@@ -41,6 +41,7 @@ export const HowItWorks = () => {
 
   return (
     <section
+      id="how-it-works"
       ref={containerRef}
       className="relative py-16 sm:py-24 md:py-32 overflow-hidden"
       style={{ backgroundColor: "#000000" }}

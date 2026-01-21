@@ -48,6 +48,7 @@ const features = [
 export const Features = () => {
   return (
     <section
+      id="features"
       className="relative py-16 sm:py-24 md:py-32 overflow-hidden"
       style={{ backgroundColor: "#000000" }}
     >
@@ -112,7 +113,7 @@ export const Features = () => {
         </div>
 
         {/* Bento Grid - Responsive layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:auto-rows-[240px] auto-rows-[200px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {features.map((feature, index) => (
             <motion.div
               key={index}
@@ -129,10 +130,9 @@ export const Features = () => {
                 borderColor: "rgba(59, 130, 246, 0.5)",
                 transition: { duration: 0.2 },
               }}
-              className="group relative p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col justify-between overflow-hidden cursor-pointer"
-              style={{
-                gridArea: `${index === 0 || index === 1 ? "auto" : "auto"}`,
-              }}
+              className={`group relative p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col justify-between overflow-hidden cursor-pointer ${
+                index === 0 ? "sm:col-span-2" : ""
+              }`}
             >
               {/* Hover glow effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

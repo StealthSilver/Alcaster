@@ -100,8 +100,9 @@ export default function Home() {
           </div>
         </div>
       </main>
-      <HowItWorks />
+
       <Features />
+      <HowItWorks />
       <Security />
       <CTA />
       <Footer />

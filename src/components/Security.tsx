@@ -22,6 +22,7 @@ const securityFeatures = [
 export const Security = () => {
   return (
     <section
+      id="security"
       className="relative py-20 sm:py-28 md:py-40 overflow-hidden"
       style={{ backgroundColor: "#000000" }}
     >
@@ -112,7 +113,7 @@ export const Security = () => {
                   "inset 0 0 60px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.4)",
               }}
             >
-              <div className="text-center">
+              <div className="text-center hidden md:block">
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
                   whileInView={{ scale: 1, opacity: 1 }}
