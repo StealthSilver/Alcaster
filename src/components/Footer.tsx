@@ -100,11 +100,9 @@ export const Footer = () => {
             className="col-span-2"
           >
             <Link href="/" className="inline-block mb-3 sm:mb-4">
-              <Image
+              <img
                 src="/Alcaster-light.svg"
                 alt="Alcaster"
-                width={120}
-                height={24}
                 className="h-6 sm:h-7 w-auto"
               />
             </Link>

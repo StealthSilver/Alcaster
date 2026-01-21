@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
@@ -41,13 +40,10 @@ export const Navbar = () => {
         <div className="flex items-center justify-between rounded-full border border-white/20 bg-black/40 backdrop-blur-xl px-4 sm:px-6 py-2.5 sm:py-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <Image
+            <img
               src="/Alcaster-light.svg"
               alt="Alcaster"
-              width={100}
-              height={20}
               className="h-5 sm:h-6 w-auto"
-              priority
             />
           </Link>
 
