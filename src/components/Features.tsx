@@ -129,17 +129,19 @@ export const Features = () => {
                 borderColor: "rgba(59, 130, 246, 0.5)",
                 transition: { duration: 0.2 },
               }}
-              style={{ gridArea: feature.gridArea }}
-              className="group relative p-6 md:p-8 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col justify-between overflow-hidden cursor-pointer"
+              className="group relative p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col justify-between overflow-hidden cursor-pointer"
+              style={{
+                gridArea: `${index === 0 || index === 1 ? "auto" : "auto"}`,
+              }}
             >
               {/* Hover glow effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               <div className="relative z-10">
-                <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-400/20 group-hover:bg-blue-500/20 transition-colors duration-300">
-                  <feature.icon className="h-7 w-7 text-blue-400" />
+                <div className="mb-3 sm:mb-4 inline-flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-blue-500/10 border border-blue-400/20 group-hover:bg-blue-500/20 transition-colors duration-300">
+                  <feature.icon className="h-6 w-6 sm:h-7 sm:w-7 text-blue-400" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2 text-xl group-hover:text-blue-400 transition-colors duration-300">
+                <h3 className="font-semibold text-foreground mb-2 text-lg sm:text-xl group-hover:text-blue-400 transition-colors duration-300">
                   {feature.title}
                 </h3>
               </div>

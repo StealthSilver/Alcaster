@@ -88,9 +88,9 @@ export const Footer = () => {
         />
       ))}
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-12 py-16 lg:py-20">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-12 py-12 sm:py-16 lg:py-20">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 lg:gap-12 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-6 sm:gap-8 lg:gap-12 mb-8 sm:mb-12">
           {/* Brand Column - Spans 2 columns */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -99,20 +99,20 @@ export const Footer = () => {
             transition={{ duration: 0.6 }}
             className="col-span-2"
           >
-            <Link href="/" className="inline-block mb-4">
+            <Link href="/" className="inline-block mb-3 sm:mb-4">
               <Image
                 src="/Alcaster-light.svg"
                 alt="Alcaster"
-                width={140}
-                height={28}
-                className="h-7 w-auto"
+                width={120}
+                height={24}
+                className="h-6 sm:h-7 w-auto"
               />
             </Link>
-            <p className="text-white/60 text-sm leading-relaxed mb-6 max-w-xs">
+            <p className="text-white/60 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 max-w-xs">
               Preserve your family's legacy across generations with
               blockchain-secured vaults built on Solana.
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {socialLinks.map((social, index) => (
                 <motion.a
                   key={index}
@@ -122,9 +122,9 @@ export const Footer = () => {
                   aria-label={social.label}
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex items-center justify-center w-9 h-9 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                  className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
                 >
-                  <social.icon className="w-4 h-4" />
+                  <social.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </motion.a>
               ))}
             </div>
@@ -140,15 +140,15 @@ export const Footer = () => {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               className="col-span-1"
             >
-              <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">
+              <h3 className="text-white font-semibold text-xs sm:text-sm uppercase tracking-wider mb-3 sm:mb-4">
                 {category}
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-2 sm:space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-white/60 hover:text-white text-sm transition-colors inline-block relative group"
+                      className="text-white/60 hover:text-white text-xs sm:text-sm transition-colors inline-block relative group"
                     >
                       {link.label}
                       <span className="absolute inset-x-0 -bottom-px h-px bg-white scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
@@ -166,28 +166,28 @@ export const Footer = () => {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="pt-8 border-t border-white/10"
+          className="pt-6 sm:pt-8 border-t border-white/10"
         >
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-white/50 text-sm">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-3 sm:gap-4">
+            <p className="text-white/50 text-xs sm:text-sm">
               © {new Date().getFullYear()} Alcaster. All rights reserved.
             </p>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
               <Link
                 href="/privacy"
-                className="text-white/50 hover:text-white text-sm transition-colors"
+                className="text-white/50 hover:text-white text-xs sm:text-sm transition-colors"
               >
                 Privacy Policy
               </Link>
               <Link
                 href="/terms"
-                className="text-white/50 hover:text-white text-sm transition-colors"
+                className="text-white/50 hover:text-white text-xs sm:text-sm transition-colors"
               >
                 Terms of Service
               </Link>
               <Link
                 href="/cookies"
-                className="text-white/50 hover:text-white text-sm transition-colors"
+                className="text-white/50 hover:text-white text-xs sm:text-sm transition-colors"
               >
                 Cookies
               </Link>
