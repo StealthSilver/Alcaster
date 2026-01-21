@@ -47,6 +47,7 @@ export const Navbar = () => {
               width={100}
               height={20}
               className="h-5 sm:h-6 w-auto"
+              priority
             />
           </Link>
 
