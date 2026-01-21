@@ -19,13 +19,6 @@ const securityFeatures = [
   { icon: Eye, label: "Privacy First" },
 ];
 
-const orbitIcons = [
-  { icon: Globe, angle: 0 },
-  { icon: Fingerprint, angle: 90 },
-  { icon: Lock, angle: 180 },
-  { icon: Eye, angle: 270 },
-];
-
 export const Security = () => {
   return (
     <section
@@ -52,36 +45,60 @@ export const Security = () => {
             transition={{ duration: 0.8 }}
             className="relative aspect-square max-w-lg mx-auto lg:mx-0"
           >
-            {/* Rotating rings with blue gradient glow */}
+            {/* Pulsing rings with blue gradient glow */}
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 rounded-full border border-white/10"
-              style={{
-                background:
-                  "radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, transparent 70%)",
+              animate={{
+                scale: [1, 1.02, 1],
+                opacity: [0.3, 0.5, 0.3],
               }}
-            />
-            <motion.div
-              animate={{ rotate: -360 }}
-              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-8 rounded-full border border-blue-400/20"
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="absolute inset-0 rounded-full border-2 border-blue-400/30"
               style={{
                 background:
                   "radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, transparent 70%)",
-                boxShadow:
-                  "inset 0 0 30px rgba(59, 130, 246, 0.2), 0 0 30px rgba(59, 130, 246, 0.15)",
+                boxShadow: "0 0 40px rgba(59, 130, 246, 0.4)",
               }}
             />
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-16 rounded-full border border-blue-400/30"
+              animate={{
+                scale: [1, 1.03, 1],
+                opacity: [0.4, 0.6, 0.4],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5,
+              }}
+              className="absolute inset-8 rounded-full border-2 border-blue-400/40"
               style={{
                 background:
                   "radial-gradient(circle at center, rgba(59, 130, 246, 0.2) 0%, transparent 70%)",
                 boxShadow:
-                  "inset 0 0 40px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.2)",
+                  "inset 0 0 40px rgba(59, 130, 246, 0.3), 0 0 50px rgba(59, 130, 246, 0.5)",
+              }}
+            />
+            <motion.div
+              animate={{
+                scale: [1, 1.04, 1],
+                opacity: [0.5, 0.7, 0.5],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1,
+              }}
+              className="absolute inset-16 rounded-full border-2 border-blue-400/50"
+              style={{
+                background:
+                  "radial-gradient(circle at center, rgba(59, 130, 246, 0.25) 0%, transparent 70%)",
+                boxShadow:
+                  "inset 0 0 50px rgba(59, 130, 246, 0.4), 0 0 60px rgba(59, 130, 246, 0.6)",
               }}
             />
 
@@ -113,53 +130,6 @@ export const Security = () => {
                 </div>
               </div>
             </div>
-
-            {/* Orbiting icons */}
-            {orbitIcons.map((item, index) => {
-              const orbitRadius = 200; // pixels from center
-
-              return (
-                <motion.div
-                  key={index}
-                  className="absolute top-1/2 left-1/2"
-                  initial={{ opacity: 0, scale: 0, rotate: item.angle }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  animate={{
-                    rotate: item.angle + 360,
-                  }}
-                  transition={{
-                    duration: 20,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
-                  style={{
-                    transformOrigin: "0 0",
-                  }}
-                >
-                  <motion.div
-                    className="h-14 w-14 rounded-xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-blue-400/30 flex items-center justify-center"
-                    style={{
-                      transform: `translate(${orbitRadius}px, -28px)`, // -28px to center the icon (half of 56px/14*4)
-                      boxShadow:
-                        "0 0 20px rgba(59, 130, 246, 0.3), inset 0 0 20px rgba(59, 130, 246, 0.1)",
-                    }}
-                    animate={{
-                      rotate: -360,
-                    }}
-                    transition={{
-                      duration: 20,
-                      repeat: Infinity,
-                      ease: "linear",
-                      delay: (item.angle / 360) * 20,
-                    }}
-                    whileHover={{ scale: 1.3 }}
-                  >
-                    <item.icon className="h-6 w-6 text-blue-400" />
-                  </motion.div>
-                </motion.div>
-              );
-            })}
           </motion.div>
 
           {/* Right - Content */}

@@ -5,6 +5,8 @@ import SplitText from "@/components/animations/SplitText";
 import HLSVideoPlayer from "@/components/HLSVideoPlayer";
 import { Navbar } from "@/components/Navbar";
 import { Security } from "@/components/Security";
+import { Features } from "@/components/Features";
+import { HowItWorks } from "@/components/HowItWorks";
 import { CTA } from "@/components/CTA";
 
 export default function Home() {
@@ -97,6 +99,8 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <HowItWorks />
+      <Features />
       <Security />
       <CTA />
     </>
