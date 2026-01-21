@@ -3,6 +3,7 @@ import { Sparkles, ArrowRight } from "lucide-react";
 import BlurIn from "@/components/animations/BlurIn";
 import SplitText from "@/components/animations/SplitText";
 import HLSVideoPlayer from "@/components/HLSVideoPlayer";
+import { Navbar } from "@/components/Navbar";
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
       className="relative h-screen w-full overflow-hidden"
       style={{ backgroundColor: "#070612" }}
     >
+      <Navbar />
       {/* Background Video */}
       <div
         className="absolute inset-0 z-0"
