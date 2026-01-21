@@ -40,11 +40,7 @@ export const Navbar = () => {
         <div className="flex items-center justify-between rounded-full border border-white/20 bg-black/40 backdrop-blur-xl px-4 sm:px-6 py-2.5 sm:py-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <img
-              src="/Alcaster-light.svg"
-              alt="Alcaster"
-              className="h-5 sm:h-6 w-auto"
-            />
+            <img src="/logo.svg" alt="Alcaster" className="h-5 sm:h-6 w-auto" />
           </Link>
 
           {/* Navigation Links - Desktop */}
