@@ -74,7 +74,7 @@ export const CTA = () => {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
                 href="/get-started"
-                className="group inline-flex items-center gap-3 rounded-full bg-foreground text-background px-8 py-5 text-lg font-semibold transition-all hover:opacity-90"
+                className="group inline-flex items-center gap-3 rounded-full bg-foreground text-background px-8 py-3 text-lg font-semibold transition-all hover:opacity-90"
               >
                 Create Your Vault
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -84,7 +84,7 @@ export const CTA = () => {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
                 href="/demo"
-                className="inline-flex items-center rounded-full border border-white/20 bg-white/20 backdrop-blur-sm px-8 py-5 text-lg font-medium text-white transition-all hover:border-white/30 hover:bg-white/30"
+                className="inline-flex items-center rounded-full border border-white/20 bg-white/20 backdrop-blur-sm px-8 py-3 text-lg font-medium text-white transition-all hover:border-white/30 hover:bg-white/30"
               >
                 Watch Demo
               </Link>
