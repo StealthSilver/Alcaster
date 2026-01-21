@@ -101,7 +101,7 @@ export const Footer = () => {
           >
             <Link href="/" className="inline-block mb-3 sm:mb-4">
               <img
-                src="/Alcaster-light.svg"
+                src="/logo.svg"
                 alt="Alcaster"
                 className="h-6 sm:h-7 w-auto"
               />
