@@ -4,6 +4,7 @@ import BlurIn from "@/components/animations/BlurIn";
 import SplitText from "@/components/animations/SplitText";
 import HLSVideoPlayer from "@/components/HLSVideoPlayer";
 import { Navbar } from "@/components/Navbar";
+import { Security } from "@/components/Security";
 import { CTA } from "@/components/CTA";
 
 export default function Home() {
@@ -96,6 +97,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <Security />
       <CTA />
     </>
   );
