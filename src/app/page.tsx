@@ -20,11 +20,11 @@ export default function Home() {
         <Navbar />
         {/* Background Video */}
         <div
-          className="absolute inset-0 z-0 lg:ml-[200px] lg:scale-120 lg:origin-left"
+          className="absolute inset-0 z-0"
           style={{
             marginLeft: "0",
             transform: "scale(1.1)",
-            transformOrigin: "center",
+            transformOrigin: "left",
           }}
         >
           <HLSVideoPlayer
