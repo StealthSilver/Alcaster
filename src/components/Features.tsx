@@ -9,39 +9,39 @@ const features = [
     title: "Family Tree Structure",
     description:
       "Organize your vault like a family tree with hierarchical access control.",
-    size: "large",
+    gridArea: "1 / 1 / 3 / 3", // spans 2 rows, 2 columns
   },
   {
     icon: Shield,
     title: "Blockchain Protected",
     description: "Built on Solana for immutable, decentralized storage.",
-    size: "small",
+    gridArea: "1 / 3 / 2 / 4",
   },
   {
     icon: Key,
     title: "Personal Keychains",
     description:
       "Each member gets their own encrypted keychain for sensitive data.",
-    size: "small",
+    gridArea: "2 / 3 / 3 / 5",
   },
   {
     icon: FileText,
     title: "Document Vault",
     description:
       "Store wills, legal documents, and certificates that pass through generations.",
-    size: "medium",
+    gridArea: "1 / 4 / 2 / 5",
   },
   {
     icon: Image,
     title: "Memory Archive",
     description: "Preserve family photos and videos in an eternal archive.",
-    size: "medium",
+    gridArea: "3 / 1 / 4 / 3",
   },
   {
     icon: Lock,
     title: "Succession Planning",
     description: "Seamlessly transfer vault ownership to the next generation.",
-    size: "small",
+    gridArea: "3 / 3 / 4 / 5",
   },
 ];
 
@@ -111,8 +111,8 @@ export const Features = () => {
           </motion.div>
         </div>
 
-        {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[200px]">
+        {/* Bento Grid - Unique asymmetric layout */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[240px]">
           {features.map((feature, index) => (
             <motion.div
               key={index}
@@ -125,45 +125,34 @@ export const Features = () => {
                 ease: [0.25, 0.46, 0.45, 0.94],
               }}
               whileHover={{
-                scale: 1.02,
+                y: -4,
                 borderColor: "rgba(59, 130, 246, 0.5)",
                 transition: { duration: 0.2 },
               }}
-              className={`
-                group relative p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm
-                flex flex-col justify-between overflow-hidden cursor-pointer
-                ${feature.size === "large" ? "md:col-span-2 md:row-span-2" : ""}
-                ${feature.size === "medium" ? "lg:col-span-2" : ""}
-              `}
+              style={{ gridArea: feature.gridArea }}
+              className="group relative p-6 md:p-8 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col justify-between overflow-hidden cursor-pointer"
             >
               {/* Hover glow effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               <div className="relative z-10">
-                <motion.div
-                  whileHover={{ rotate: 10, scale: 1.1 }}
-                  className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-400/20"
-                >
-                  <feature.icon className="h-6 w-6 text-blue-400" />
-                </motion.div>
-                <h3
-                  className={`font-semibold text-foreground mb-2 ${
-                    feature.size === "large" ? "text-2xl" : "text-lg"
-                  }`}
-                >
+                <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-400/20 group-hover:bg-blue-500/20 transition-colors duration-300">
+                  <feature.icon className="h-7 w-7 text-blue-400" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2 text-xl group-hover:text-blue-400 transition-colors duration-300">
                   {feature.title}
                 </h3>
               </div>
-              <p
-                className={`relative z-10 text-white/70 ${
-                  feature.size === "large" ? "text-base" : "text-sm"
-                }`}
-              >
+              <p className="relative z-10 text-white/70 text-sm leading-relaxed">
                 {feature.description}
               </p>
 
-              {/* Corner accent */}
-              <div className="absolute -bottom-12 -right-12 w-32 h-32 rounded-full bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors" />
+              {/* Animated corner accent */}
+              <motion.div
+                className="absolute -bottom-12 -right-12 w-32 h-32 rounded-full bg-blue-500/5"
+                whileHover={{ scale: 1.2, opacity: 0.15 }}
+                transition={{ duration: 0.3 }}
+              />
             </motion.div>
           ))}
         </div>
