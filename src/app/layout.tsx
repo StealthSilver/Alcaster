@@ -13,24 +13,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alcaster - Advanced Video Streaming Platform",
+  title: "Alcaster - Preserve What Matters. Forever.",
   description:
-    "Experience seamless video streaming with Alcaster. A cutting-edge platform delivering high-quality content with secure and reliable streaming technology.",
+    "A blockchain-secured family vault where ownership, trust, and access are passed down over time. Preserve family documents, memories, and secrets across generations with Alcaster's decentralized storage.",
   keywords: [
-    "video streaming",
-    "Alcaster",
-    "video platform",
-    "streaming service",
-    "online video",
+    "family vault",
+    "blockchain storage",
+    "decentralized family vault",
+    "digital legacy",
+    "family tree",
+    "document vault",
+    "memory archive",
+    "succession planning",
+    "Solana blockchain",
+    "encrypted storage",
   ],
   authors: [{ name: "Alcaster" }],
   creator: "Alcaster",
   publisher: "Alcaster",
   metadataBase: new URL("https://alcaster.com"),
   openGraph: {
-    title: "Alcaster - Advanced Video Streaming Platform",
+    title: "Alcaster - Preserve What Matters. Forever.",
     description:
-      "Experience seamless video streaming with Alcaster. A cutting-edge platform delivering high-quality content with secure and reliable streaming technology.",
+      "A blockchain-secured family vault where ownership, trust, and access are passed down over time. Join thousands of families preserving their most important documents, memories, and secrets across generations.",
     type: "website",
     locale: "en_US",
     siteName: "Alcaster",
@@ -39,15 +44,15 @@ export const metadata: Metadata = {
         url: "/alcaster.svg",
         width: 1200,
         height: 630,
-        alt: "Alcaster Logo",
+        alt: "Alcaster - Decentralized Family Vault",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Alcaster - Advanced Video Streaming Platform",
+    title: "Alcaster - Preserve What Matters. Forever.",
     description:
-      "Experience seamless video streaming with Alcaster. A cutting-edge platform delivering high-quality content with secure and reliable streaming technology.",
+      "Blockchain-secured family vault for preserving documents, memories, and secrets across generations. Built on Solana with hierarchical access control.",
     images: ["/alcaster.svg"],
     creator: "@alcaster",
   },
