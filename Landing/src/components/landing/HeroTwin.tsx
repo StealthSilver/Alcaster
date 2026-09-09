@@ -56,7 +56,7 @@ export function HeroTwin({ className }: HeroTwinProps) {
           showLabels
           float
           interactive={false}
-          className="min-h-[300px] sm:min-h-[360px] lg:min-h-[440px] [&>div]:min-h-inherit"
+          className="min-h-[220px] sm:min-h-[280px] lg:min-h-[min(380px,46vh)] [&>div]:min-h-inherit"
         />
       </motion.div>
     </div>

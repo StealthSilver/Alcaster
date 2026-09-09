@@ -6,9 +6,13 @@ import type { WeatherConditions } from "@/data/dashboard";
 
 type WeatherOverviewProps = {
   weather: WeatherConditions;
+  subtitle?: string;
 };
 
-export function WeatherOverview({ weather }: WeatherOverviewProps) {
+export function WeatherOverview({
+  weather,
+  subtitle = "Site environmental inputs linked to generation",
+}: WeatherOverviewProps) {
   const items = [
     {
       label: "Irradiance",
@@ -49,7 +53,7 @@ export function WeatherOverview({ weather }: WeatherOverviewProps) {
           Current Conditions
         </h2>
         <p className="mt-1 text-sm text-white/40">
-          Site environmental inputs linked to generation
+          {subtitle}
         </p>
       </div>
 

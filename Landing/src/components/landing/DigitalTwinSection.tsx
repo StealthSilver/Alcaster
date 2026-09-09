@@ -236,9 +236,9 @@ export function DigitalTwinSection() {
   const reduced = usePrefersReducedMotion();
 
   return (
-    <section id="platform" className="relative scroll-mt-24 py-20 sm:py-28">
+    <section id="platform" className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden py-6 sm:py-8">
       <Container>
-        <div className="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:gap-16">
+        <div className="grid min-h-0 gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-12">
           <div>
             <SectionHeading
               eyebrow="Platform"
@@ -251,14 +251,14 @@ export function DigitalTwinSection() {
               initial="hidden"
               whileInView="visible"
               viewport={viewportOnce}
-              className="mt-10 grid grid-cols-2 gap-2.5 sm:gap-3"
+              className="mt-6 grid grid-cols-2 gap-2 sm:mt-8 sm:gap-3"
             >
               {LAYERS.map((layer, i) => (
                 <motion.li
                   key={layer}
                   variants={fadeUp}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl border px-3.5 py-3",
+                    "flex items-center gap-3 rounded-xl border px-3 py-2.5 sm:px-3.5 sm:py-3",
                     i % 3 === 0
                       ? "border-[#e6740a]/25 bg-[#e6740a]/[0.06]"
                       : "border-white/[0.08] bg-white/[0.02]",
@@ -273,7 +273,7 @@ export function DigitalTwinSection() {
             </motion.ul>
           </div>
 
-          <div className="space-y-4">
+          <div className="hidden min-h-0 lg:block">
             <TwinBridgeVisual reduced={reduced} />
             <motion.p
               variants={fadeUp}
@@ -281,7 +281,7 @@ export function DigitalTwinSection() {
               whileInView="visible"
               viewport={viewportOnce}
               transition={{ duration: duration.base, ease: easeOut }}
-              className="text-sm leading-relaxed text-white/45"
+              className="mt-4 text-sm leading-relaxed text-white/45"
             >
               The twin is the shared substrate — physical reality, operational
               state, and simulation stay connected through one model.
@@ -294,7 +294,7 @@ export function DigitalTwinSection() {
           initial="hidden"
           whileInView="visible"
           viewport={viewportOnce}
-          className="mt-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-xs font-medium uppercase tracking-[0.14em] text-white/35 sm:mt-12"
+          className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-xs font-medium uppercase tracking-[0.14em] text-white/35 sm:mt-8"
         >
           {["Real Plant", "Digital Twin", "Data + Simulation"].map((label, i) => (
             <motion.span key={label} variants={fadeUp} className="inline-flex items-center gap-3">

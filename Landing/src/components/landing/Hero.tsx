@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 
+import { TrustStrip } from "@/components/landing/TrustStrip";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
@@ -16,7 +17,7 @@ import {
 function HeroTwinSkeleton() {
   return (
     <div
-      className="relative min-h-[280px] w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-[#010609] sm:min-h-[340px] lg:min-h-[420px]"
+      className="relative h-full min-h-[200px] w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-[#010609] sm:min-h-[240px] lg:min-h-[320px]"
       aria-hidden
     >
       <div className="pointer-events-none absolute inset-0 alcaster-grid opacity-50" />
@@ -44,13 +45,13 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative overflow-hidden pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden"
     >
       <div className="pointer-events-none absolute inset-0 alcaster-radial" />
       <div className="pointer-events-none absolute inset-0 alcaster-grid opacity-70" />
 
-      <Container className="relative">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+      <Container className="relative flex min-h-0 flex-1 flex-col justify-center pt-16 pb-6 sm:pt-[4.5rem] sm:pb-8">
+        <div className="grid min-h-0 items-center gap-8 md:grid-cols-[1.05fr_0.95fr] md:gap-10 lg:gap-14">
           <motion.div
             variants={reduced ? undefined : staggerContainer}
             initial={reduced ? false : "hidden"}
@@ -59,37 +60,25 @@ export function Hero() {
           >
             <motion.p
               variants={reduced ? undefined : fadeUp}
-              className="mb-5 text-[11px] font-medium uppercase tracking-[0.22em] text-[#e6740a]"
+              className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#e6740a]"
             >
               Digital twins for renewable energy
             </motion.p>
 
             <motion.h1
               variants={reduced ? undefined : fadeUp}
-              className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]"
+              className="text-balance text-3xl font-bold tracking-tight text-white sm:text-5xl lg:text-[3.15rem] lg:leading-[1.1]"
             >
               Build the Digital Twin of Your Power Plant.
             </motion.h1>
 
             <motion.p
               variants={reduced ? undefined : fadeUp}
-              className="mt-5 max-w-md text-pretty text-base leading-relaxed text-white/55 sm:text-lg"
+              className="mt-4 max-w-md text-pretty text-sm leading-relaxed text-white/55 sm:mt-5 sm:text-lg"
             >
               Create interactive digital replicas of renewable energy plants and
               understand how they behave.
             </motion.p>
-
-            <motion.div
-              variants={reduced ? undefined : fadeUp}
-              className="mt-8 flex flex-wrap items-center gap-3"
-            >
-              <Button href="#platform" variant="secondary" size="lg">
-                Explore Alcaster
-              </Button>
-              <Button href="#demo" variant="primary" size="lg">
-                Request a Demo
-              </Button>
-            </motion.div>
           </motion.div>
 
           <motion.div
@@ -100,12 +89,30 @@ export function Hero() {
               ease: easeOut,
               delay: reduced ? 0 : 0.12,
             }}
-            className="relative"
+            className="relative min-h-0"
           >
             <HeroTwin />
           </motion.div>
         </div>
+
+        <motion.div
+          variants={reduced ? undefined : fadeUp}
+          initial={reduced ? false : "hidden"}
+          animate={reduced ? undefined : "visible"}
+          className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:mt-10"
+        >
+          <Button href="/dashboard" variant="secondary" size="lg">
+            Sign In
+          </Button>
+          <Button href="#demo" variant="primary" size="lg">
+            Request a Demo
+          </Button>
+        </motion.div>
       </Container>
+
+      <div className="hidden sm:block">
+        <TrustStrip />
+      </div>
     </section>
   );
 }

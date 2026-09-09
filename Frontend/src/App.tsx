@@ -1,57 +1,132 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import { GuestRoute, ProtectedRoute } from "@/components/auth/AuthRoutes";
+import { AuthProvider } from "@/context/AuthContext";
+import { WorkspaceProvider } from "@/context/WorkspaceContext";
+import { AuthPage } from "@/pages/AuthPage";
+import { CreateProjectPage } from "@/pages/CreateProjectPage";
+import { CreateSitePage } from "@/pages/CreateSitePage";
 import { DashboardPage } from "@/pages/DashboardPage";
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#010609] px-6 text-center font-[Inter,system-ui,sans-serif] text-white">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e6740a]">
-          Alcaster
-        </p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="mt-2 text-sm text-white/40">
-          Coming soon — navigate back to the dashboard to continue.
-        </p>
-        <Link
-          to="/"
-          className="mt-6 inline-flex rounded-xl bg-[#e6740a] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#f0821a]"
-        >
-          Back to Dashboard
-        </Link>
-      </div>
-    </div>
-  );
-}
+import { DigitalTwinPage } from "@/pages/DigitalTwinPage";
+import { ProjectDashboardPage } from "@/pages/ProjectDashboardPage";
+import { SitemapPage } from "@/pages/SitemapPage";
+import { ProjectsPage } from "@/pages/ProjectsPage";
+import { ScadaPage } from "@/pages/ScadaPage";
+import { SectionPage } from "@/pages/SectionPage";
+import { SitesPage } from "@/pages/SitesPage";
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/dashboard" element={<Navigate to="/" replace />} />
-        <Route path="/projects" element={<PlaceholderPage title="Projects" />} />
-        <Route
-          path="/digital-twins"
-          element={<PlaceholderPage title="Digital Twins" />}
-        />
-        <Route
-          path="/digital-twins/:plantId"
-          element={<PlaceholderPage title="Digital Twin" />}
-        />
-        <Route path="/analytics" element={<PlaceholderPage title="Analytics" />} />
-        <Route path="/alerts" element={<PlaceholderPage title="Alerts" />} />
-        <Route
-          path="/simulation"
-          element={<PlaceholderPage title="Simulation" />}
-        />
-        <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
-        <Route
-          path="/projects/new"
-          element={<PlaceholderPage title="Create Plant" />}
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AuthProvider>
+        <WorkspaceProvider>
+          <Routes>
+            <Route element={<GuestRoute />}>
+              <Route path="/signin" element={<AuthPage mode="signin" />} />
+              <Route
+                path="/request-access"
+                element={<AuthPage mode="request" />}
+              />
+            </Route>
+
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/projects/new" element={<CreateProjectPage />} />
+              <Route
+                path="/projects/:projectId"
+                element={<ProjectDashboardPage />}
+              />
+              <Route
+                path="/projects/:projectId/digital-twin"
+                element={<DigitalTwinPage />}
+              />
+              <Route
+                path="/projects/:projectId/sitemap"
+                element={<SitemapPage />}
+              />
+              <Route
+                path="/projects/:projectId/scada"
+                element={<ScadaPage />}
+              />
+              <Route
+                path="/projects/:projectId/analytics"
+                element={
+                  <SectionPage
+                    title="Analytics"
+                    description="Performance, losses, and plant insights"
+                  />
+                }
+              />
+              <Route
+                path="/projects/:projectId/monitoring"
+                element={
+                  <SectionPage
+                    title="Monitoring"
+                    description="Health, alarms, and asset status"
+                  />
+                }
+              />
+              <Route
+                path="/projects/:projectId/forecasting"
+                element={
+                  <SectionPage
+                    title="Forecasting"
+                    description="Generation forecast and weather outlook"
+                  />
+                }
+              />
+              <Route
+                path="/projects/:projectId/settings"
+                element={
+                  <SectionPage
+                    title="Settings"
+                    description="Project configuration and access"
+                  />
+                }
+              />
+              <Route path="/sites" element={<SitesPage />} />
+              <Route path="/sites/new" element={<CreateSitePage />} />
+              <Route
+                path="/alerts"
+                element={
+                  <SectionPage
+                    title="Alerts"
+                    description="Operational alerts across this site"
+                  />
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <SectionPage
+                    title="Reports"
+                    description="Site-level reports and exports"
+                  />
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <SectionPage
+                    title="Settings"
+                    description="Site and organisation settings"
+                  />
+                }
+              />
+              <Route path="/digital-twins" element={<Navigate to="/" replace />} />
+              <Route
+                path="/digital-twins/:plantId"
+                element={<Navigate to="/" replace />}
+              />
+              <Route path="/analytics" element={<Navigate to="/" replace />} />
+              <Route path="/simulation" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </WorkspaceProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

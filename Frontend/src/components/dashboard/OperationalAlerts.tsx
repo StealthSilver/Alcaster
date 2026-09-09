@@ -7,6 +7,7 @@ import type { AlertSeverity, OperationalAlert } from "@/data/dashboard";
 
 type OperationalAlertsProps = {
   alerts: OperationalAlert[];
+  viewAllHref?: string;
 };
 
 const severityIcon: Record<
@@ -27,7 +28,10 @@ const severityIcon: Record<
   },
 };
 
-export function OperationalAlerts({ alerts }: OperationalAlertsProps) {
+export function OperationalAlerts({
+  alerts,
+  viewAllHref = "/alerts",
+}: OperationalAlertsProps) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
@@ -41,7 +45,7 @@ export function OperationalAlerts({ alerts }: OperationalAlertsProps) {
           Operational Alerts
         </h2>
         <Link
-          to="/alerts"
+          to={viewAllHref}
           className="inline-flex items-center gap-1 text-xs font-medium text-white/45 transition-colors hover:text-[#e6740a]"
         >
           View all alerts

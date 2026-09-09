@@ -6,6 +6,7 @@
   --alcaster-orange: #e6740a;
   --background: #010609;
   --foreground: #ffffff;
+  --landing-nav-h: 4.25rem;
 }
 
 @theme inline {
@@ -20,6 +21,13 @@
 html {
   scroll-behavior: smooth;
   background: var(--alcaster-bg);
+}
+
+html.landing-lock,
+html.landing-lock body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

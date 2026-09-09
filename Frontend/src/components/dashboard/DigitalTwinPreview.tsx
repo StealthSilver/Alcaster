@@ -11,7 +11,11 @@ const STAGES = [
   { id: "grid", label: "Grid", x: 640, y: 48 },
 ] as const;
 
-export function DigitalTwinPreview() {
+type DigitalTwinPreviewProps = {
+  href?: string;
+};
+
+export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPreviewProps) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
@@ -39,7 +43,7 @@ export function DigitalTwinPreview() {
           </p>
         </div>
         <Link
-          to="/digital-twins"
+          to={href}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-[#e6740a] transition-opacity hover:opacity-80"
         >
           Open Digital Twin

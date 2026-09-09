@@ -26,11 +26,7 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen bg-[#010609] font-sans text-white antialiased">
-      <Sidebar
-        user={user}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
           <Header

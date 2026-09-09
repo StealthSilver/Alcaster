@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 const actions = [
   {
     href: "/projects/new",
-    label: "Create Plant",
+    label: "Create Project",
     Icon: Plus,
     primary: true,
   },

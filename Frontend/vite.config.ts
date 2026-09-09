@@ -12,12 +12,27 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [
     react(),
-    babel({ presets: [reactCompilerPreset()] }),
+    babel({
+      presets: [reactCompilerPreset()],
+      exclude: [
+        /node_modules/,
+        /src\/components\/twin\//,
+        /\0rolldown\/runtime\.js/,
+      ],
+    }),
     tailwindcss(),
   ],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
+    },
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
     },
   },
 });

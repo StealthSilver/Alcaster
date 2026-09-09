@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: alcaster-api
+    runtime: node
+    rootDir: Backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SAMESITE
+        value: none
+      - key: MONGODB_URI
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: DEMO_EMAIL
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false

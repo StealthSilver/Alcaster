@@ -6,6 +6,8 @@ import type { GenerationPoint } from "@/data/dashboard";
 
 type PortfolioGenerationProps = {
   series: GenerationPoint[];
+  title?: string;
+  subtitle?: string;
 };
 
 const WIDTH = 720;
@@ -27,7 +29,11 @@ function buildPath(
   return `${line} L ${last.x.toFixed(2)} ${baselineY} L ${first.x.toFixed(2)} ${baselineY} Z`;
 }
 
-export function PortfolioGeneration({ series }: PortfolioGenerationProps) {
+export function PortfolioGeneration({
+  series,
+  title = "Portfolio Generation",
+  subtitle = "Actual vs Forecast",
+}: PortfolioGenerationProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const chart = useMemo(() => {
@@ -82,9 +88,9 @@ export function PortfolioGeneration({ series }: PortfolioGenerationProps) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold tracking-tight text-white">
-            Portfolio Generation
+            {title}
           </h2>
-          <p className="mt-1 text-sm text-white/40">Actual vs Forecast</p>
+          <p className="mt-1 text-sm text-white/40">{subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-[11px] font-medium text-white/45">
           <LegendDot color="#e6740a" label="Actual" />

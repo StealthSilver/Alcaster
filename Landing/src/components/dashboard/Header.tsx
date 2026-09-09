@@ -59,11 +59,17 @@ export function Header({
           <Bell className="h-4 w-4" strokeWidth={1.6} />
           <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#e6740a]" />
         </button>
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.05] text-xs font-semibold text-white"
-          title={user.name}
-        >
-          {user.initials}
+        <div className="flex min-w-0 items-center gap-2 border-l border-white/[0.06] pl-2 sm:pl-3">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.05] text-xs font-semibold text-white"
+            title={user.name}
+          >
+            {user.initials}
+          </div>
+          <div className="hidden min-w-0 sm:block">
+            <p className="truncate text-sm font-medium text-white">{user.name}</p>
+            <p className="truncate text-[11px] text-white/35">{user.role}</p>
+          </div>
         </div>
       </div>
     </header>

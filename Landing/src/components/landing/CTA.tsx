@@ -8,14 +8,14 @@ import { fadeUp, staggerContainer, viewportOnce } from "@/lib/motion";
 
 export function CTA() {
   return (
-    <section id="demo" className="relative scroll-mt-24 py-20 sm:py-28">
+    <section id="demo" className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden py-6 sm:py-8">
       <Container>
         <motion.div
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={viewportOnce}
-          className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] px-6 py-14 text-center sm:px-12 sm:py-16"
+          className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] px-6 py-12 text-center sm:px-12 sm:py-16"
         >
           <div
             className="pointer-events-none absolute inset-0"
@@ -51,6 +51,7 @@ export function CTA() {
             </Button>
           </motion.div>
         </motion.div>
+        <p className="mt-8 text-center text-xs text-white/30">© 2026 Alcaster</p>
       </Container>
     </section>
   );

@@ -129,7 +129,7 @@ function CapabilityCard({ capability }: { capability: Capability }) {
       <Card
         hover
         className={cn(
-          "group h-full p-5 transition-transform duration-400 hover:-translate-y-0.5 sm:p-6",
+          "group h-full p-4 transition-transform duration-400 hover:-translate-y-0.5 sm:p-5",
           treatmentClasses(capability.treatment),
         )}
       >
@@ -141,7 +141,7 @@ function CapabilityCard({ capability }: { capability: Capability }) {
         ) : null}
 
         <div className="relative flex h-full flex-col">
-          <div className="mb-5 flex items-start justify-between gap-3">
+          <div className="mb-3 flex items-start justify-between gap-3 sm:mb-5">
             <span
               className={cn(
                 "text-[11px] font-semibold tabular-nums tracking-wider",
@@ -157,6 +157,7 @@ function CapabilityCard({ capability }: { capability: Capability }) {
                   ? "border-[#e6740a]/35 bg-[#e6740a]/10 text-[#e6740a] group-hover:border-[#e6740a]/55"
                   : "border-white/10 bg-white/[0.03] text-white/55 group-hover:border-white/20 group-hover:text-white/80",
               )}
+              suppressHydrationWarning
             >
               <Icon className="h-4 w-4" strokeWidth={1.5} />
             </span>
@@ -165,7 +166,7 @@ function CapabilityCard({ capability }: { capability: Capability }) {
           <h3 className="text-base font-semibold tracking-tight text-white sm:text-[17px]">
             {capability.title}
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-white/45">
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-white/45">
             {capability.description}
           </p>
 
@@ -197,7 +198,7 @@ function CapabilityCard({ capability }: { capability: Capability }) {
 
 export function CapabilityGrid() {
   return (
-    <section id="solutions" className="relative scroll-mt-24 py-20 sm:py-28">
+    <section id="solutions" className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden py-6 sm:py-8">
       <Container>
         <SectionHeading
           eyebrow="Capabilities"
@@ -211,7 +212,7 @@ export function CapabilityGrid() {
           initial="hidden"
           whileInView="visible"
           viewport={viewportOnce}
-          className="mt-12 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4"
+          className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-4 lg:mt-8"
         >
           {CAPABILITIES.map((capability) => (
             <CapabilityCard key={capability.id} capability={capability} />

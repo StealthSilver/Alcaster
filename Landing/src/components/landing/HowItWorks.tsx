@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useScroll, useSpring, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion } from "framer-motion";
 
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -44,21 +43,9 @@ const STEPS = [
 
 export function HowItWorks() {
   const reduced = usePrefersReducedMotion();
-  const trackRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: trackRef,
-    offset: ["start 0.75", "end 0.45"],
-  });
-  const progress = useSpring(scrollYProgress, {
-    stiffness: 90,
-    damping: 28,
-    restDelta: 0.001,
-  });
-  const lineScaleX = useTransform(progress, [0, 1], [0, 1]);
-  const lineScaleY = useTransform(progress, [0, 1], [0, 1]);
 
   return (
-    <section id="technology" className="relative scroll-mt-24 py-20 sm:py-28">
+    <section id="technology" className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden py-6 sm:py-8">
       <div className="pointer-events-none absolute inset-0 alcaster-radial opacity-60" />
 
       <Container className="relative">
@@ -69,37 +56,13 @@ export function HowItWorks() {
           className="max-w-3xl"
         />
 
-        <div ref={trackRef} className="relative mt-14 sm:mt-16">
-          {/* Desktop horizontal connector */}
+        <div className="relative mt-8 sm:mt-10">
           <div
-            className="pointer-events-none absolute left-0 right-0 top-[22px] hidden h-px lg:block"
+            className="pointer-events-none absolute left-0 right-0 top-[22px] hidden h-px md:block"
             aria-hidden
           >
             <div className="absolute inset-0 bg-white/[0.08]" />
-            {!reduced ? (
-              <motion.div
-                className="absolute inset-y-0 left-0 origin-left bg-[#e6740a]"
-                style={{ scaleX: lineScaleX, height: 1 }}
-              />
-            ) : (
-              <div className="absolute inset-0 bg-[#e6740a]/40" />
-            )}
-          </div>
-
-          {/* Mobile vertical connector */}
-          <div
-            className="pointer-events-none absolute bottom-4 left-[21px] top-4 w-px lg:hidden"
-            aria-hidden
-          >
-            <div className="absolute inset-0 bg-white/[0.08]" />
-            {!reduced ? (
-              <motion.div
-                className="absolute inset-x-0 top-0 origin-top bg-[#e6740a]"
-                style={{ scaleY: lineScaleY, width: 1 }}
-              />
-            ) : (
-              <div className="absolute inset-0 bg-[#e6740a]/40" />
-            )}
+            <div className="absolute inset-0 bg-[#e6740a]/50" />
           </div>
 
           <motion.ol
@@ -107,13 +70,13 @@ export function HowItWorks() {
             initial="hidden"
             whileInView="visible"
             viewport={viewportOnce}
-            className="relative grid gap-8 lg:grid-cols-6 lg:gap-4"
+            className="relative grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6 lg:gap-4"
           >
             {STEPS.map((step, i) => (
               <motion.li
                 key={step.number}
                 variants={fadeUp}
-                className="relative flex gap-4 lg:flex-col lg:gap-5"
+                className="relative flex flex-col gap-3 sm:flex-row sm:gap-4 md:flex-col md:gap-5"
               >
                 <div
                   className={cn(

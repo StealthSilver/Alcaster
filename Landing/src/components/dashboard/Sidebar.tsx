@@ -14,8 +14,6 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import type { DashboardUser } from "@/data/dashboard";
-
 const primaryNav = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, match: "dashboard" },
   { href: "/projects", label: "Projects", Icon: FolderKanban },
@@ -26,7 +24,6 @@ const primaryNav = [
 ] as const;
 
 type SidebarProps = {
-  user: DashboardUser;
   open: boolean;
   onClose: () => void;
 };
@@ -38,7 +35,7 @@ function isActive(pathname: string, href: string, match?: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar({ user, open, onClose }: SidebarProps) {
+export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -136,20 +133,6 @@ export function Sidebar({ user, open, onClose }: SidebarProps) {
             <Settings className="h-4 w-4" strokeWidth={1.6} />
             Settings
           </Link>
-
-          <div className="mt-auto border-t border-white/[0.06] px-2 py-4">
-            <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.05] text-xs font-semibold text-white">
-                {user.initials}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-white">
-                  {user.name}
-                </p>
-                <p className="truncate text-[11px] text-white/35">{user.role}</p>
-              </div>
-            </div>
-          </div>
         </nav>
       </aside>
     </>

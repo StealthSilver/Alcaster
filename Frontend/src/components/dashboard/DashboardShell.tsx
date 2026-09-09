@@ -1,17 +1,21 @@
-
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import type { DashboardUser } from "@/data/dashboard";
+import { isProjectPath } from "@/lib/paths";
 
 import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
+import { Navbar } from "./Navbar";
+import { ProjectSidebar } from "./ProjectSidebar";
+import { SiteSidebar } from "./SiteSidebar";
 
 type DashboardShellProps = {
   children: React.ReactNode;
   user: DashboardUser;
   dateLabel: string;
   title?: string;
-  subtitle?: string;
+  actions?: React.ReactNode;
+  layout?: "default" | "fill";
 };
 
 export function DashboardShell({
@@ -19,27 +23,49 @@ export function DashboardShell({
   user,
   dateLabel,
   title = "Dashboard",
-  subtitle = "Monitor and understand your renewable energy portfolio.",
+  actions,
+  layout = "default",
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { pathname } = useLocation();
+  const projectNav = isProjectPath(pathname);
+  const fill = layout === "fill";
 
   return (
-    <div className="flex min-h-screen bg-[#010609] font-sans text-white antialiased">
-      <Sidebar
-        user={user}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
-          <Header
-            title={title}
-            subtitle={subtitle}
-            dateLabel={dateLabel}
-            user={user}
-            onMenuClick={() => setSidebarOpen(true)}
+    <div
+      className={`flex flex-col bg-[#010609] font-sans text-white antialiased ${
+        fill ? "h-screen overflow-hidden" : "min-h-screen"
+      }`}
+    >
+      <Navbar user={user} onMenuClick={() => setSidebarOpen(true)} />
+      <div className="flex min-h-0 min-w-0 flex-1">
+        <SiteSidebar
+          open={!projectNav && sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+        {projectNav ? (
+          <ProjectSidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
           />
-          <main className="mt-6 pb-10">{children}</main>
+        ) : null}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div
+            className={
+              fill
+                ? "flex min-h-0 flex-1 flex-col px-4 py-4 sm:px-6 lg:px-8"
+                : "mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-6"
+            }
+          >
+            <Header title={title} dateLabel={dateLabel} actions={actions} />
+            <main
+              className={
+                fill ? "mt-4 flex min-h-0 flex-1 flex-col" : "mt-6 pb-10"
+              }
+            >
+              {children}
+            </main>
+          </div>
         </div>
       </div>
     </div>
