@@ -194,7 +194,7 @@ export function CreateTwinForm({
       {formError ? (
         <p
           role="alert"
-          className="rounded-lg border border-[#f07167]/25 bg-[#f07167]/10 px-3 py-2 text-sm text-[#f07167]"
+          className="rounded-lg border border-danger/25 bg-danger/10 px-3 py-2 text-sm text-danger"
         >
           {formError}
         </p>
@@ -292,7 +292,7 @@ export function CreateTwinForm({
                   id="twin-tech"
                   value={values.moduleTech}
                   onChange={(e) => update("moduleTech", e.target.value as ModuleTech)}
-                  className={`${inputClass()} bg-[#010609]`}
+                  className={inputClass()}
                 >
                   <option value="mono_perc">Mono PERC</option>
                   <option value="topcon">TOPCon</option>
@@ -306,7 +306,7 @@ export function CreateTwinForm({
                   onChange={(e) =>
                     update("mountingType", e.target.value as MountingType)
                   }
-                  className={`${inputClass()} bg-[#010609]`}
+                  className={inputClass()}
                 >
                   <option value="single_axis">Single-axis tracker</option>
                   <option value="fixed_tilt">Fixed tilt</option>
@@ -372,7 +372,7 @@ export function CreateTwinForm({
                   onChange={(e) =>
                     update("inverterType", e.target.value as InverterKind)
                   }
-                  className={`${inputClass()} bg-[#010609]`}
+                  className={inputClass()}
                 >
                   <option value="central">Central</option>
                   <option value="string">String</option>
@@ -459,8 +459,8 @@ export function CreateTwinForm({
           </Section>
         </div>
 
-        <aside className="h-fit rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 xl:sticky xl:top-4">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/40">
+        <aside className="h-fit rounded-2xl border border-edge bg-fill p-5 xl:sticky xl:top-4">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">
             Estimated plant
           </p>
           <dl className="mt-4 space-y-3 text-sm">
@@ -491,14 +491,14 @@ export function CreateTwinForm({
               }
             />
           </dl>
-          <p className="mt-5 text-xs leading-relaxed text-white/35">
+          <p className="mt-5 text-xs leading-relaxed text-muted">
             The twin is a dummy spatial model generated from these parameters — not
             surveyed as-built geometry.
           </p>
           <button
             type="submit"
             disabled={submitting}
-            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#e6740a] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#f0821a] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -515,7 +515,7 @@ export function CreateTwinForm({
             <button
               type="button"
               onClick={onCancel}
-              className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-white/[0.08] text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.04] hover:text-white"
+              className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-edge text-sm font-medium text-secondary transition-colors hover:bg-fill hover:text-fg"
             >
               Cancel
             </button>
@@ -536,9 +536,9 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 sm:p-6">
-      <h2 className="text-base font-semibold tracking-tight text-white">{title}</h2>
-      <p className="mt-1 text-sm text-white/40">{note}</p>
+    <section className="rounded-2xl border border-edge bg-fill p-5 sm:p-6">
+      <h2 className="text-base font-semibold tracking-tight text-fg">{title}</h2>
+      <p className="mt-1 text-sm text-muted">{note}</p>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -547,8 +547,8 @@ function Section({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-white/45">{label}</dt>
-      <dd className="font-semibold tabular-nums text-white">{value}</dd>
+      <dt className="text-muted">{label}</dt>
+      <dd className="font-semibold tabular-nums text-fg">{value}</dd>
     </div>
   );
 }
@@ -565,13 +565,13 @@ function Check({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <label htmlFor={id} className="flex cursor-pointer items-center gap-3 text-sm text-white/80">
+    <label htmlFor={id} className="flex cursor-pointer items-center gap-3 text-sm text-secondary">
       <input
         id={id}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-white/20 bg-transparent accent-[#e6740a]"
+        className="h-4 w-4 rounded border-edge-strong bg-transparent accent-[#e6740a]"
       />
       {label}
     </label>

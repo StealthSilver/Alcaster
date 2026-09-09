@@ -80,7 +80,7 @@ function strokeFor(component: SitemapComponent, active: boolean) {
   if (component.status === "OFFLINE") return "rgba(240,113,103,0.9)";
   if (component.status === "WARNING") return "rgba(230,116,10,0.95)";
   if (active) return "#e6740a";
-  return "rgba(255,255,255,0.28)";
+  return "color-mix(in srgb, var(--alcaster-fg) 28%, transparent)";
 }
 
 export function SitemapDiagram({
@@ -107,12 +107,12 @@ export function SitemapDiagram({
     >
       <defs>
         <linearGradient id={`${uid}-site`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#243328" />
-          <stop offset="100%" stopColor="#1a241c" />
+          <stop offset="0%" stopColor="var(--alcaster-diagram-site-start)" />
+          <stop offset="100%" stopColor="var(--alcaster-diagram-site-end)" />
         </linearGradient>
       </defs>
 
-      <rect width={view.width} height={view.height} fill="#121814" />
+      <rect width={view.width} height={view.height} fill="var(--alcaster-diagram)" />
 
       {(() => {
         const origin = toSvg(-layout.width / 2, -layout.depth / 2, view);
@@ -124,7 +124,7 @@ export function SitemapDiagram({
             height={layout.depth}
             rx={1.4}
             fill={`url(#${uid}-site)`}
-            stroke="rgba(255,255,255,0.08)"
+            stroke="color-mix(in srgb, var(--alcaster-fg) 8%, transparent)"
             strokeWidth={0.35}
           />
         );
@@ -140,7 +140,7 @@ export function SitemapDiagram({
                 y={sy - road.d / 2}
                 width={road.w}
                 height={road.d}
-                fill="rgba(255,255,255,0.045)"
+                fill="color-mix(in srgb, var(--alcaster-fg) 5%, transparent)"
               />
             );
           })
@@ -179,7 +179,7 @@ export function SitemapDiagram({
       <CableLayer
         paths={layout.acCables}
         view={view}
-        stroke="rgba(255,255,255,0.16)"
+        stroke="color-mix(in srgb, var(--alcaster-fg) 16%, transparent)"
         width={0.16}
         flow
       />
@@ -222,7 +222,7 @@ export function SitemapDiagram({
           active={isActive(component, hoveredId, hoveredKind)}
           dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
           onHover={onHover}
-          fill="#141a16"
+          fill="var(--alcaster-diagram-equipment-alt)"
         />
       ))}
       {byKind("inverter").map((component) => (
@@ -345,7 +345,7 @@ function ZoneLabel({
       x={sx}
       y={sy}
       textAnchor="middle"
-      fill="rgba(255,255,255,0.22)"
+      fill="color-mix(in srgb, var(--alcaster-fg) 22%, transparent)"
       fontSize={2.1}
       fontFamily="Inter, system-ui, sans-serif"
       letterSpacing={0.35}
@@ -388,7 +388,11 @@ function TableSymbol({ component, view, active, dimmed, onHover }: SymbolProps) 
         width={component.w}
         height={component.d}
         rx={0.12}
-        fill={active ? "#16344f" : "#102a42"}
+        fill={
+          active
+            ? "var(--alcaster-diagram-module-active)"
+            : "var(--alcaster-diagram-module)"
+        }
         stroke={stroke}
         strokeWidth={active ? 0.18 : 0.08}
       />
@@ -450,7 +454,7 @@ function InverterSymbol({ component, view, active, dimmed, onHover }: SymbolProp
         width={component.w}
         height={component.d}
         rx={0.28}
-        fill="#0d1210"
+        fill="var(--alcaster-diagram-equipment)"
         stroke={stroke}
         strokeWidth={active ? 0.22 : 0.12}
       />
@@ -473,13 +477,13 @@ function InverterSymbol({ component, view, active, dimmed, onHover }: SymbolProp
       <path
         d="M -0.55 0 Q -0.28 -0.55 0 0 Q 0.28 0.55 0.55 0"
         fill="none"
-        stroke="rgba(255,255,255,0.62)"
+        stroke="color-mix(in srgb, var(--alcaster-fg) 62%, transparent)"
         strokeWidth={0.12}
       />
       <text
         y={component.d / 2 + 1.15}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.55)"
+        fill="color-mix(in srgb, var(--alcaster-fg) 55%, transparent)"
         fontSize={0.95}
         fontFamily="Inter, system-ui, sans-serif"
       >
@@ -506,12 +510,12 @@ function TransformerSymbol({ component, view, active, dimmed, onHover }: SymbolP
         height={component.d}
         fill="transparent"
       />
-      <circle cx={-1.15} cy={0} r={1.65} fill="#0d1210" stroke={stroke} strokeWidth={0.18} />
-      <circle cx={1.15} cy={0} r={1.65} fill="#0d1210" stroke={stroke} strokeWidth={0.18} />
+      <circle cx={-1.15} cy={0} r={1.65} fill="var(--alcaster-diagram-equipment)" stroke={stroke} strokeWidth={0.18} />
+      <circle cx={1.15} cy={0} r={1.65} fill="var(--alcaster-diagram-equipment)" stroke={stroke} strokeWidth={0.18} />
       <text
         y={component.d / 2 + 0.2}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.55)"
+        fill="color-mix(in srgb, var(--alcaster-fg) 55%, transparent)"
         fontSize={0.95}
         fontFamily="Inter, system-ui, sans-serif"
       >
@@ -537,7 +541,7 @@ function SubstationSymbol({ component, view, active, dimmed, onHover }: SymbolPr
         width={component.w}
         height={component.d}
         rx={0.3}
-        fill="#10140f"
+        fill="var(--alcaster-diagram-yard)"
         stroke={stroke}
         strokeWidth={active ? 0.22 : 0.12}
       />
@@ -554,7 +558,7 @@ function SubstationSymbol({ component, view, active, dimmed, onHover }: SymbolPr
         y1={0.15}
         x2={component.w / 2 - 0.7}
         y2={0.15}
-        stroke="rgba(255,255,255,0.35)"
+        stroke="color-mix(in srgb, var(--alcaster-fg) 35%, transparent)"
         strokeWidth={0.16}
       />
       {[-1.8, 0, 1.8].map((x) => (
@@ -564,14 +568,14 @@ function SubstationSymbol({ component, view, active, dimmed, onHover }: SymbolPr
           y1={-0.9}
           x2={x}
           y2={1.4}
-          stroke="rgba(255,255,255,0.28)"
+          stroke="color-mix(in srgb, var(--alcaster-fg) 28%, transparent)"
           strokeWidth={0.12}
         />
       ))}
       <text
         y={component.d / 2 + 1.15}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.55)"
+        fill="color-mix(in srgb, var(--alcaster-fg) 55%, transparent)"
         fontSize={0.95}
         fontFamily="Inter, system-ui, sans-serif"
       >
@@ -591,11 +595,11 @@ function GridSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
       className="cursor-pointer"
       {...hitHandlers(component.id, onHover)}
     >
-      <circle r={2.35} fill="#0d1210" stroke={stroke} strokeWidth={0.18} />
+      <circle r={2.35} fill="var(--alcaster-diagram-equipment)" stroke={stroke} strokeWidth={0.18} />
       <path
         d="M -1.4 0 Q -0.7 -1.35 0 0 Q 0.7 1.35 1.4 0"
         fill="none"
-        stroke="rgba(255,255,255,0.7)"
+        stroke="color-mix(in srgb, var(--alcaster-fg) 70%, transparent)"
         strokeWidth={0.16}
       />
       <line x1={0} y1={2.35} x2={0} y2={3.6} stroke={stroke} strokeWidth={0.14} />
@@ -603,7 +607,7 @@ function GridSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
       <text
         y={5.1}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.55)"
+        fill="color-mix(in srgb, var(--alcaster-fg) 55%, transparent)"
         fontSize={0.95}
         fontFamily="Inter, system-ui, sans-serif"
       >
@@ -627,20 +631,20 @@ function BuildingSymbol({ component, view, active, dimmed, onHover }: SymbolProp
         y={-component.d / 2 + 0.5}
         width={component.w}
         height={component.d - 0.5}
-        fill="#161c18"
+        fill="var(--alcaster-diagram-building)"
         stroke={strokeFor(component, active)}
         strokeWidth={0.12}
       />
       <polygon
         points={`${-component.w / 2 - 0.2},${-component.d / 2 + 0.55} 0,${-component.d / 2 - 0.7} ${component.w / 2 + 0.2},${-component.d / 2 + 0.55}`}
-        fill="#1c2420"
+        fill="var(--alcaster-diagram-roof)"
         stroke={strokeFor(component, active)}
         strokeWidth={0.1}
       />
       <text
         y={component.d / 2 + 1.05}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.5)"
+        fill="color-mix(in srgb, var(--alcaster-fg) 50%, transparent)"
         fontSize={0.85}
         fontFamily="Inter, system-ui, sans-serif"
       >
@@ -666,7 +670,7 @@ function WeatherSymbol({ component, view, active, dimmed, onHover }: SymbolProps
       <text
         y={1.8}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.5)"
+        fill="color-mix(in srgb, var(--alcaster-fg) 50%, transparent)"
         fontSize={0.8}
         fontFamily="Inter, system-ui, sans-serif"
       >
@@ -692,7 +696,7 @@ function NorthArrow({
       <text
         y={2.3}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.45)"
+        fill="color-mix(in srgb, var(--alcaster-fg) 45%, transparent)"
         fontSize={1.1}
         fontFamily="Inter, system-ui, sans-serif"
       >

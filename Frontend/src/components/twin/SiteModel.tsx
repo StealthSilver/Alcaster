@@ -57,20 +57,32 @@ function createPanelTexture() {
   return texture;
 }
 
-function Ground({ width, depth }: { width: number; depth: number }) {
+function Ground({
+  width,
+  depth,
+  light,
+}: {
+  width: number;
+  depth: number;
+  light: boolean;
+}) {
+  const far = light ? "#d5ddd8" : "#121814";
+  const mid = light ? "#c3d0c6" : "#1c2a22";
+  const near = light ? "#b4c4b8" : "#243328";
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
         <planeGeometry args={[width + 80, depth + 80]} />
-        <meshStandardMaterial color="#121814" roughness={1} />
+        <meshStandardMaterial color={far} roughness={1} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[width, depth]} />
-        <meshStandardMaterial color="#1c2a22" roughness={0.95} />
+        <meshStandardMaterial color={mid} roughness={0.95} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
         <planeGeometry args={[width - 1.5, depth - 1.5]} />
-        <meshStandardMaterial color="#243328" roughness={1} />
+        <meshStandardMaterial color={near} roughness={1} />
       </mesh>
     </group>
   );
@@ -521,10 +533,16 @@ function WeatherStation({ layout }: { layout: TwinLayout }) {
   );
 }
 
-export function SiteModel({ layout }: { layout: TwinLayout }) {
+export function SiteModel({
+  layout,
+  light = false,
+}: {
+  layout: TwinLayout;
+  light?: boolean;
+}) {
   return (
     <group>
-      <Ground width={layout.width} depth={layout.depth} />
+      <Ground width={layout.width} depth={layout.depth} light={light} />
       <Roads layout={layout} />
       <Fence layout={layout} />
       <Panels layout={layout} />

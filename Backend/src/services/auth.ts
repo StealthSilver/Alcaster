@@ -1,13 +1,21 @@
 import { HttpError } from "../errors.js";
-import { toPublicUser, verifyPassword } from "../lib/crypto.js";
+import { hashPassword, toPublicUser, verifyPassword } from "../lib/crypto.js";
 import {
   createAccessRequest,
+  deleteUserById,
   findAccessRequestByEmail,
   findUserByEmail,
   findUserById,
   getDummyPasswordHash,
+  updateUserProfile,
 } from "../data/store.js";
-import type { PublicUser, RequestAccessInput, SignInInput } from "../types.js";
+import type {
+  DeleteAccountInput,
+  PublicUser,
+  RequestAccessInput,
+  SignInInput,
+  UpdateProfileInput,
+} from "../types.js";
 
 export async function signIn(input: SignInInput): Promise<PublicUser> {
   const user = await findUserByEmail(input.email);
@@ -72,6 +80,61 @@ export async function getCurrentUser(userId: string): Promise<PublicUser> {
     throw new HttpError(401, "Your session has expired. Please sign in again.");
   }
   return toPublicUser(user);
+}
+
+export async function updateProfile(
+  userId: string,
+  input: UpdateProfileInput,
+): Promise<PublicUser> {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new HttpError(401, "Your session has expired. Please sign in again.");
+  }
+
+  if (input.newPassword) {
+    const passwordOk = await verifyPassword(
+      input.currentPassword,
+      user.passwordHash,
+    );
+    if (!passwordOk) {
+      throw new HttpError(400, "Please fix the highlighted fields.", {
+        currentPassword: "Current password is incorrect.",
+      });
+    }
+  }
+
+  const updated = await updateUserProfile(userId, {
+    name: input.name,
+    passwordHash: input.newPassword
+      ? await hashPassword(input.newPassword)
+      : undefined,
+  });
+  if (!updated) {
+    throw new HttpError(401, "Your session has expired. Please sign in again.");
+  }
+  return toPublicUser(updated);
+}
+
+export async function deleteAccount(
+  userId: string,
+  input: DeleteAccountInput,
+): Promise<void> {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new HttpError(401, "Your session has expired. Please sign in again.");
+  }
+
+  const passwordOk = await verifyPassword(input.password, user.passwordHash);
+  if (!passwordOk) {
+    throw new HttpError(400, "Please fix the highlighted fields.", {
+      password: "Password is incorrect.",
+    });
+  }
+
+  const deleted = await deleteUserById(userId);
+  if (!deleted) {
+    throw new HttpError(401, "Your session has expired. Please sign in again.");
+  }
 }
 
 function isDuplicateKeyError(error: unknown): boolean {

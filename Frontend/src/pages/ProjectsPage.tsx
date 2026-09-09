@@ -14,21 +14,14 @@ export function ProjectsPage() {
     ? { name: user.name, role: user.role, initials: user.initials }
     : { name: "User", role: "Organization Manager", initials: "U" };
 
-  const dateLabel = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-
   return (
     <DashboardShell
       user={shellUser}
-      dateLabel={dateLabel}
       title="Projects"
       actions={<CreateProjectButton />}
     >
       {loading ? (
-        <p className="text-sm text-white/40">Loading projects…</p>
+        <p className="text-sm text-muted">Loading projects…</p>
       ) : (
         <ProjectTable projects={projects} />
       )}

@@ -42,6 +42,50 @@ export const requestAccessSchema = z.object({
     .max(2000, "Message is too long."),
 });
 
+export const updateProfileSchema = z
+  .object({
+    name: z
+      .string({ error: "Full name is required." })
+      .trim()
+      .min(1, "Full name is required.")
+      .min(2, "Enter your full name.")
+      .max(80, "Full name is too long."),
+    currentPassword: z
+      .string()
+      .max(128, "Password is too long.")
+      .optional()
+      .transform((value) => value?.trim() ?? ""),
+    newPassword: z
+      .string()
+      .max(128, "Password is too long.")
+      .optional()
+      .transform((value) => value?.trim() ?? ""),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.newPassword) return;
+    if (data.newPassword.length < 8) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["newPassword"],
+        message: "New password must be at least 8 characters.",
+      });
+    }
+    if (!data.currentPassword) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["currentPassword"],
+        message: "Enter your current password to set a new one.",
+      });
+    }
+  });
+
+export const deleteAccountSchema = z.object({
+  password: z
+    .string({ error: "Password is required." })
+    .min(1, "Password is required.")
+    .max(128, "Password is too long."),
+});
+
 export const createSiteSchema = z.object({
   name: z
     .string({ error: "Site name is required." })

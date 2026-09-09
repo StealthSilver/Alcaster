@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 
 import type { GenerationPoint } from "@/data/dashboard";
 
+import { panelClass } from "./panel";
+
 type PortfolioGenerationProps = {
   series: GenerationPoint[];
   title?: string;
@@ -82,35 +84,35 @@ export function PortfolioGeneration({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] sm:p-6"
+      className={`${panelClass} p-4 sm:p-5`}
       aria-label="Portfolio generation"
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-white">
+          <h2 className="text-sm font-semibold text-fg">
             {title}
           </h2>
-          <p className="mt-1 text-sm text-white/40">{subtitle}</p>
+          <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 text-[11px] font-medium text-white/45">
+        <div className="flex flex-wrap items-center gap-4 text-[11px] font-medium text-muted">
           <LegendDot color="#e6740a" label="Actual" />
-          <LegendDot color="rgba(255,255,255,0.55)" label="Forecast" dashed />
-          <LegendDot color="rgba(255,255,255,0.25)" label="Target" dashed />
+          <LegendDot color="color-mix(in srgb, var(--alcaster-fg) 55%, transparent)" label="Forecast" dashed />
+          <LegendDot color="color-mix(in srgb, var(--alcaster-fg) 25%, transparent)" label="Target" dashed />
         </div>
       </div>
 
       <div className="relative mt-6">
         {hovered ? (
-          <div className="pointer-events-none absolute right-0 top-0 z-10 rounded-lg border border-white/[0.08] bg-[#010609]/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm">
-            <p className="font-medium text-white/70">{hovered.hour}:00</p>
-            <p className="mt-1 text-white">
+          <div className="pointer-events-none absolute right-0 top-0 z-10 rounded-lg border border-edge bg-page/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm">
+            <p className="font-medium text-secondary">{hovered.hour}:00</p>
+            <p className="mt-1 text-fg">
               Actual{" "}
-              <span className="font-semibold text-[#e6740a]">
+              <span className="font-semibold text-accent">
                 {hovered.actual} MW
               </span>
             </p>
-            <p className="text-white/50">Forecast {hovered.forecast} MW</p>
-            <p className="text-white/35">Target {hovered.target} MW</p>
+            <p className="text-muted">Forecast {hovered.forecast} MW</p>
+            <p className="text-muted">Target {hovered.target} MW</p>
           </div>
         ) : null}
 
@@ -127,14 +129,14 @@ export function PortfolioGeneration({
                 x2={WIDTH - PAD.right}
                 y1={tick.y}
                 y2={tick.y}
-                stroke="rgba(255,255,255,0.04)"
+                stroke="color-mix(in srgb, var(--alcaster-fg) 4%, transparent)"
                 strokeWidth={1}
               />
               <text
                 x={PAD.left - 10}
                 y={tick.y + 3}
                 textAnchor="end"
-                className="fill-white/25"
+                className="fill-subtle"
                 fontSize={10}
                 fontFamily="Inter, sans-serif"
               >
@@ -146,7 +148,7 @@ export function PortfolioGeneration({
           <motion.path
             d={chart.targetPath}
             fill="none"
-            stroke="rgba(255,255,255,0.18)"
+            stroke="color-mix(in srgb, var(--alcaster-fg) 18%, transparent)"
             strokeWidth={1.25}
             strokeDasharray="4 5"
             initial={{ pathLength: 0, opacity: 0 }}
@@ -156,7 +158,7 @@ export function PortfolioGeneration({
           <motion.path
             d={chart.forecastPath}
             fill="none"
-            stroke="rgba(255,255,255,0.45)"
+            stroke="color-mix(in srgb, var(--alcaster-fg) 45%, transparent)"
             strokeWidth={1.5}
             strokeDasharray="3 4"
             initial={{ pathLength: 0, opacity: 0 }}
@@ -195,7 +197,7 @@ export function PortfolioGeneration({
                 x={chart.toX(i)}
                 y={HEIGHT - 12}
                 textAnchor="middle"
-                className="fill-white/30"
+                className="fill-subtle"
                 fontSize={10}
                 fontFamily="Inter, sans-serif"
               >
@@ -218,7 +220,7 @@ export function PortfolioGeneration({
                     x2={chart.toX(i)}
                     y1={PAD.top}
                     y2={chart.baselineY}
-                    stroke="rgba(255,255,255,0.12)"
+                    stroke="color-mix(in srgb, var(--alcaster-fg) 12%, transparent)"
                     strokeWidth={1}
                   />
                   <circle
@@ -226,7 +228,7 @@ export function PortfolioGeneration({
                     cy={chart.actualPts[i].y}
                     r={4}
                     fill="#e6740a"
-                    stroke="#010609"
+                    stroke="var(--alcaster-page)"
                     strokeWidth={2}
                   />
                 </>

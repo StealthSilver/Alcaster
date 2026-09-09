@@ -94,6 +94,25 @@ export async function findUserByEmail(
   return doc ? toUserRecord(doc) : undefined;
 }
 
+export async function updateUserProfile(
+  id: string,
+  updates: { name: string; passwordHash?: string },
+): Promise<UserRecord | undefined> {
+  if (!isValidObjectId(id)) return undefined;
+  const set: { name: string; passwordHash?: string } = { name: updates.name };
+  if (updates.passwordHash) set.passwordHash = updates.passwordHash;
+  const doc = await UserModel.findByIdAndUpdate(id, { $set: set }, { new: true })
+    .populate<{ organizationId: OrgRef }>("organizationId", "name")
+    .lean();
+  return doc ? toUserRecord(doc) : undefined;
+}
+
+export async function deleteUserById(id: string): Promise<boolean> {
+  if (!isValidObjectId(id)) return false;
+  const result = await UserModel.findByIdAndDelete(id);
+  return Boolean(result);
+}
+
 export async function findAccessRequestByEmail(
   email: string,
 ): Promise<AccessRequestRecord | undefined> {

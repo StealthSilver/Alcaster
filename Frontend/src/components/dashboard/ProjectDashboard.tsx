@@ -1,10 +1,8 @@
-import { motion } from "framer-motion";
-
 import type { ProjectDashboardPayload } from "@/lib/api";
 import type { PortfolioKPI } from "@/data/dashboard";
 import {
-  projectStatusColor,
   projectStatusLabel,
+  projectStatusLozenge,
   projectTypeLabel,
 } from "@/lib/labels";
 import { projectHomePath } from "@/lib/paths";
@@ -12,6 +10,7 @@ import { projectHomePath } from "@/lib/paths";
 import { DigitalTwinPreview } from "./DigitalTwinPreview";
 import { KPIGrid } from "./KPIGrid";
 import { OperationalAlerts } from "./OperationalAlerts";
+import { panelClass, sectionHintClass, sectionTitleClass } from "./panel";
 import { PortfolioGeneration } from "./PortfolioGeneration";
 import { RecentActivity } from "./RecentActivity";
 import { RecentTasks } from "./RecentTasks";
@@ -29,7 +28,7 @@ function toKpis(data: ProjectDashboardPayload): PortfolioKPI[] {
   return [
     {
       id: "capacity",
-      label: "Installed Capacity",
+      label: "Capacity",
       value: kpis.capacityMw,
       unit: "MW",
       supporting: `${projectTypeLabel[project.type]} · ${project.location}`,
@@ -37,11 +36,11 @@ function toKpis(data: ProjectDashboardPayload): PortfolioKPI[] {
     },
     {
       id: "output",
-      label: "Current Output",
+      label: "Output",
       value: kpis.currentOutputMw,
       unit: "MW",
       decimals: 1,
-      supporting: `${share.toFixed(1)}% of installed capacity`,
+      supporting: `${share.toFixed(1)}% of capacity`,
       tooltip: "Live active power at this plant",
     },
     {
@@ -55,11 +54,11 @@ function toKpis(data: ProjectDashboardPayload): PortfolioKPI[] {
     },
     {
       id: "today",
-      label: "Today's Generation",
+      label: "Today",
       value: kpis.todayGenerationMwh,
       unit: "MWh",
       decimals: 1,
-      supporting: "Energy delivered since 06:00",
+      supporting: "Generation since 06:00",
       tooltip: "Cumulative generation today",
     },
     {
@@ -70,8 +69,8 @@ function toKpis(data: ProjectDashboardPayload): PortfolioKPI[] {
       decimals: 1,
       supporting:
         kpis.vsForecastPct >= 100
-          ? "Tracking at or above forecast"
-          : "Behind today's forecast",
+          ? "At or above forecast"
+          : "Behind forecast",
       tooltip: "Today's actual generation versus forecast",
     },
   ];
@@ -81,21 +80,15 @@ export function ProjectDashboard({ data }: ProjectDashboardProps) {
   const base = projectHomePath(data.project.id);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
-      className="space-y-6"
-    >
+    <div className="space-y-4">
+      <ProjectSummary data={data} />
       <KPIGrid kpis={toKpis(data)} />
 
-      <ProjectSummary data={data} />
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <PortfolioGeneration
             series={data.generationSeries}
-            title="Today's Generation"
+            title="Generation"
             subtitle="Actual vs forecast for this project"
           />
         </div>
@@ -107,7 +100,7 @@ export function ProjectDashboard({ data }: ProjectDashboardProps) {
 
       <DigitalTwinPreview href={`${base}/digital-twin`} />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <OperationalAlerts
           alerts={data.alerts}
           viewAllHref={`${base}/monitoring`}
@@ -118,43 +111,30 @@ export function ProjectDashboard({ data }: ProjectDashboardProps) {
         />
         <RecentActivity activity={data.activity} />
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function ProjectSummary({ data }: { data: ProjectDashboardPayload }) {
   const { project } = data;
-  const statusColor = projectStatusColor[project.status];
 
   return (
-    <section className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 shadow-[0_8px_28px_rgba(0,0,0,0.22)]">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <section className={`${panelClass} px-4 py-4`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/40">
-            Project overview
+          <h2 className={sectionTitleClass}>{project.name}</h2>
+          <p className={sectionHintClass}>
+            {project.description ||
+              `${projectTypeLabel[project.type]} plant at ${project.location}`}
           </p>
-          <h2 className="mt-1 text-base font-semibold tracking-tight text-white">
-            {project.name}
-          </h2>
-          {project.description ? (
-            <p className="mt-1 max-w-2xl text-sm text-white/45">
-              {project.description}
-            </p>
-          ) : (
-            <p className="mt-1 text-sm text-white/40">
-              {projectTypeLabel[project.type]} plant at {project.location}
-            </p>
-          )}
         </div>
-        <span className="inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-white/55">
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: statusColor }}
-          />
+        <span
+          className={`inline-flex h-5 items-center rounded px-1.5 text-xs font-medium ${projectStatusLozenge[project.status]}`}
+        >
           {projectStatusLabel[project.status]}
         </span>
       </div>
-      <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-edge bg-fill-strong sm:grid-cols-4">
         <Meta label="Site" value={project.siteName} />
         <Meta label="Type" value={projectTypeLabel[project.type]} />
         <Meta label="Location" value={project.location} />
@@ -166,11 +146,9 @@ function ProjectSummary({ data }: { data: ProjectDashboardPayload }) {
 
 function Meta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.04] bg-white/[0.02] px-3 py-3">
-      <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/35">
-        {label}
-      </dt>
-      <dd className="mt-1 truncate text-sm font-semibold text-white">{value}</dd>
+    <div className="bg-surface px-3 py-2.5">
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className="mt-0.5 truncate text-sm font-medium text-fg">{value}</dd>
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
-import { Field } from "@/components/auth/Field";
-import { inputClass } from "@/components/auth/inputClass";
 import { DashboardShell } from "@/components/dashboard";
+import { FormField } from "@/components/dashboard/FormField";
+import { formControlClass, panelClass } from "@/components/dashboard/panel";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { ApiError, createSiteRequest, type SiteStatus } from "@/lib/api";
@@ -82,97 +82,118 @@ export function CreateSitePage() {
     ? { name: user.name, role: user.role, initials: user.initials }
     : { name: "User", role: "Organization Manager", initials: "U" };
 
-  const dateLabel = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-
   return (
-    <DashboardShell
-      user={shellUser}
-      dateLabel={dateLabel}
-      title="Create Site"
-    >
-      <form
-        onSubmit={onSubmit}
-        noValidate
-        className="max-w-xl space-y-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
-      >
-        {formError && !fields.name ? (
-          <p
-            role="alert"
-            className="rounded-lg border border-[#f07167]/25 bg-[#f07167]/10 px-3 py-2 text-sm text-[#f07167]"
-          >
-            {formError}
-          </p>
-        ) : null}
+    <DashboardShell user={shellUser} title="Create site">
+      <div className="max-w-2xl">
+        <p className="mb-5 text-sm text-muted">
+          Add a site to group projects, plants, and operational data.
+        </p>
+        <form onSubmit={onSubmit} noValidate className={panelClass}>
+          <div className="p-6">
+          {formError && !fields.name ? (
+            <p
+              role="alert"
+              className="mb-4 rounded-md border border-danger/25 bg-danger/10 px-3 py-2 text-sm text-danger"
+            >
+              {formError}
+            </p>
+          ) : null}
 
-        <Field id="site-name" label="Site Name" error={fields.name}>
-          <input
-            id="site-name"
-            name="name"
-            placeholder="Karnataka Solar Complex"
-            value={values.name}
-            onChange={(event) => update("name", event.target.value)}
-            className={inputClass(fields.name)}
-          />
-        </Field>
+          <div className="space-y-4">
+            <FormField
+              id="site-name"
+              label="Name"
+              hint="A unique name for this site."
+              error={fields.name}
+            >
+              <input
+                id="site-name"
+                name="name"
+                placeholder="Karnataka Solar Complex"
+                value={values.name}
+                onChange={(event) => update("name", event.target.value)}
+                className={formControlClass(fields.name)}
+              />
+            </FormField>
 
-        <Field id="site-location" label="Location" error={fields.location}>
-          <input
-            id="site-location"
-            name="location"
-            placeholder="Karnataka"
-            value={values.location}
-            onChange={(event) => update("location", event.target.value)}
-            className={inputClass(fields.location)}
-          />
-        </Field>
+            <FormField
+              id="site-location"
+              label="Location"
+              hint="Region or state where this site operates."
+              error={fields.location}
+            >
+              <input
+                id="site-location"
+                name="location"
+                placeholder="Karnataka"
+                value={values.location}
+                onChange={(event) => update("location", event.target.value)}
+                className={formControlClass(fields.location)}
+              />
+            </FormField>
 
-        <Field id="site-status" label="Status" error={fields.status}>
-          <select
-            id="site-status"
-            name="status"
-            value={values.status}
-            onChange={(event) =>
-              update("status", event.target.value as SiteStatus)
-            }
-            className={`${inputClass(fields.status)} bg-[#010609]`}
-          >
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="on_hold">On Hold</option>
-          </select>
-        </Field>
+            <FormField id="site-status" label="Status" error={fields.status}>
+              <select
+                id="site-status"
+                name="status"
+                value={values.status}
+                onChange={(event) =>
+                  update("status", event.target.value as SiteStatus)
+                }
+                className={formControlClass(fields.status)}
+              >
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="on_hold">On Hold</option>
+              </select>
+            </FormField>
 
-        <Field id="site-description" label="Description" error={fields.description}>
-          <textarea
-            id="site-description"
-            name="description"
-            rows={4}
-            placeholder="Optional notes about this site..."
-            value={values.description}
-            onChange={(event) => update("description", event.target.value)}
-            className={inputClass(fields.description, "h-auto min-h-[110px] py-3")}
-          />
-        </Field>
+            <FormField
+              id="site-description"
+              label="Description"
+              hint="Optional. Shown on the sites list."
+              error={fields.description}
+            >
+              <textarea
+                id="site-description"
+                name="description"
+                rows={3}
+                placeholder="Notes about this site"
+                value={values.description}
+                onChange={(event) => update("description", event.target.value)}
+                className={formControlClass(
+                  fields.description,
+                  "h-auto min-h-[80px] py-2",
+                )}
+              />
+            </FormField>
+          </div>
+          </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#e6740a] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#f0821a] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Creating site…
-            </>
-          ) : (
-            "Create Site"
-          )}
-        </button>
-      </form>
+          <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-edge bg-surface px-6 py-3">
+            <Link
+              to="/sites"
+              className="inline-flex h-8 items-center rounded-md px-3 text-sm text-muted transition-colors hover:bg-fill hover:text-fg"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Creating…
+                </>
+              ) : (
+                "Create site"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </DashboardShell>
   );
 }

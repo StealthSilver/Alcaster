@@ -14,21 +14,14 @@ export function SitesPage() {
     ? { name: user.name, role: user.role, initials: user.initials }
     : { name: "User", role: "Organization Manager", initials: "U" };
 
-  const dateLabel = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-
   return (
     <DashboardShell
       user={shellUser}
-      dateLabel={dateLabel}
       title="Sites"
       actions={<CreateSiteButton />}
     >
       {loading ? (
-        <p className="text-sm text-white/40">Loading sites…</p>
+        <p className="text-sm text-muted">Loading sites…</p>
       ) : (
         <SiteTable sites={sites} />
       )}

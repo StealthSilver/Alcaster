@@ -6,6 +6,7 @@ export type PublicUser = {
   initials: string;
   organizationId: string | null;
   organizationName: string | null;
+  createdAt: string | null;
 };
 
 export type UserRecord = {
@@ -38,6 +39,16 @@ export type RequestAccessInput = {
   email: string;
   company: string;
   message: string;
+};
+
+export type UpdateProfileInput = {
+  name: string;
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type DeleteAccountInput = {
+  password: string;
 };
 
 export type ProjectType = "solar" | "wind" | "hybrid" | "bess";

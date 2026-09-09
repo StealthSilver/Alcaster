@@ -1,15 +1,109 @@
 @import "tailwindcss";
 
-:root {
-  --alcaster-bg: #010609;
-  --alcaster-white: #ffffff;
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --alcaster-page: #010609;
+  --alcaster-nav: #010609;
+  --alcaster-surface: #071015;
+  --alcaster-input: #010609;
+  --alcaster-fg: #ffffff;
+  --alcaster-secondary: rgba(255, 255, 255, 0.78);
+  --alcaster-muted: rgba(255, 255, 255, 0.45);
+  --alcaster-subtle: rgba(255, 255, 255, 0.32);
+  --alcaster-edge: rgba(255, 255, 255, 0.08);
+  --alcaster-edge-strong: rgba(255, 255, 255, 0.12);
+  --alcaster-fill: rgba(255, 255, 255, 0.04);
+  --alcaster-fill-strong: rgba(255, 255, 255, 0.08);
+  --alcaster-overlay: rgba(0, 0, 0, 0.6);
   --alcaster-accent: #e6740a;
+  --alcaster-accent-hover: #f0821a;
+  --alcaster-on-accent: #ffffff;
+  --alcaster-danger: #f07167;
+  --alcaster-danger-strong: #c24b45;
+  --alcaster-success: #8fbf9a;
+  --alcaster-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --alcaster-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='0.45' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --lozenge-active-bg: #1c2b22;
+  --lozenge-active-fg: #8fbf9a;
+  --lozenge-pending-bg: #2f2214;
+  --lozenge-pending-fg: #d4924a;
+  --lozenge-hold-bg: rgba(255, 255, 255, 0.06);
+  --lozenge-hold-fg: rgba(255, 255, 255, 0.55);
+  --alcaster-diagram: #121814;
+  --alcaster-diagram-site-start: #243328;
+  --alcaster-diagram-site-end: #1a241c;
+  --alcaster-diagram-equipment: #0d1210;
+  --alcaster-diagram-equipment-alt: #141a16;
+  --alcaster-diagram-yard: #10140f;
+  --alcaster-diagram-building: #161c18;
+  --alcaster-diagram-roof: #1c2420;
+  --alcaster-diagram-module: #102a42;
+  --alcaster-diagram-module-active: #16344f;
   --font-inter: "Inter", system-ui, -apple-system, sans-serif;
 }
 
+html[data-theme="light"] {
+  color-scheme: light;
+  --alcaster-page: #f6f8fa;
+  --alcaster-nav: #ffffff;
+  --alcaster-surface: #ffffff;
+  --alcaster-input: #ffffff;
+  --alcaster-fg: #1f2328;
+  --alcaster-secondary: #4a5562;
+  --alcaster-muted: #656d76;
+  --alcaster-subtle: #8b939e;
+  --alcaster-edge: #d0d7de;
+  --alcaster-edge-strong: #b8c0c8;
+  --alcaster-fill: rgba(31, 35, 40, 0.045);
+  --alcaster-fill-strong: rgba(31, 35, 40, 0.08);
+  --alcaster-overlay: rgba(31, 35, 40, 0.45);
+  --alcaster-accent: #e6740a;
+  --alcaster-accent-hover: #f0821a;
+  --alcaster-on-accent: #ffffff;
+  --alcaster-danger: #c24b45;
+  --alcaster-danger-strong: #b42318;
+  --alcaster-success: #2a6b45;
+  --alcaster-shadow: 0 8px 24px rgba(31, 35, 40, 0.08);
+  --alcaster-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231f2328' stroke-opacity='0.45' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --lozenge-active-bg: #e8f4ec;
+  --lozenge-active-fg: #2a6b45;
+  --lozenge-pending-bg: #fdecdc;
+  --lozenge-pending-fg: #b35c12;
+  --lozenge-hold-bg: rgba(31, 35, 40, 0.06);
+  --lozenge-hold-fg: #656d76;
+  --alcaster-diagram: #e8eef2;
+  --alcaster-diagram-site-start: #dce8df;
+  --alcaster-diagram-site-end: #c9d8cd;
+  --alcaster-diagram-equipment: #ffffff;
+  --alcaster-diagram-equipment-alt: #f4f7f5;
+  --alcaster-diagram-yard: #f7f9f8;
+  --alcaster-diagram-building: #e6ece8;
+  --alcaster-diagram-roof: #d4ddd8;
+  --alcaster-diagram-module: #2a5478;
+  --alcaster-diagram-module-active: #1e6aa3;
+}
+
 @theme inline {
-  --color-alcaster-bg: var(--alcaster-bg);
-  --color-alcaster-accent: var(--alcaster-accent);
+  --color-page: var(--alcaster-page);
+  --color-nav: var(--alcaster-nav);
+  --color-surface: var(--alcaster-surface);
+  --color-input: var(--alcaster-input);
+  --color-fg: var(--alcaster-fg);
+  --color-secondary: var(--alcaster-secondary);
+  --color-muted: var(--alcaster-muted);
+  --color-subtle: var(--alcaster-subtle);
+  --color-edge: var(--alcaster-edge);
+  --color-edge-strong: var(--alcaster-edge-strong);
+  --color-fill: var(--alcaster-fill);
+  --color-fill-strong: var(--alcaster-fill-strong);
+  --color-overlay: var(--alcaster-overlay);
+  --color-accent: var(--alcaster-accent);
+  --color-accent-hover: var(--alcaster-accent-hover);
+  --color-on-accent: var(--alcaster-on-accent);
+  --color-danger: var(--alcaster-danger);
+  --color-danger-strong: var(--alcaster-danger-strong);
+  --color-success: var(--alcaster-success);
   --font-sans: var(--font-inter);
 }
 
@@ -27,8 +121,8 @@ body,
 
 body {
   margin: 0;
-  background: var(--alcaster-bg);
-  color: var(--alcaster-white);
+  background: var(--alcaster-page);
+  color: var(--alcaster-fg);
   font-family: var(--font-inter);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -58,6 +152,15 @@ body {
 
 .alcaster-live-dot {
   animation: alcaster-live-pulse 1.6s ease-in-out infinite;
+}
+
+select:not([multiple]) {
+  appearance: none;
+  background-image: var(--alcaster-select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 12px;
+  padding-right: 2.25rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

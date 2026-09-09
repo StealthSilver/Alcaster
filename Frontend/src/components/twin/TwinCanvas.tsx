@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 
+import { useTheme } from "@/context/ThemeContext";
 import type { TwinRecord } from "@/lib/api";
 import { buildTwinLayout } from "@/lib/twinLayout";
 
@@ -14,6 +15,9 @@ type TwinCanvasProps = {
 };
 
 export function TwinCanvas({ twin }: TwinCanvasProps) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  const canvasBg = isLight ? "#e8eef2" : "#070d12";
   const layout = useMemo(
     () => buildTwinLayout(twin.spec, twin.derived),
     [twin],
@@ -30,19 +34,25 @@ export function TwinCanvas({ twin }: TwinCanvasProps) {
         width: "100%",
         height: "100%",
         display: "block",
-        background: "#010609",
+        background: canvasBg,
       }}
     >
-      <color attach="background" args={["#070d12"]} />
-      <hemisphereLight args={["#c5d4e0", "#3a3328", 0.8]} />
-      <ambientLight intensity={0.7} />
+      <color attach="background" args={[canvasBg]} />
+      <hemisphereLight
+        args={
+          isLight
+            ? ["#eef4f8", "#9aa090", 1.05]
+            : ["#c5d4e0", "#3a3328", 0.8]
+        }
+      />
+      <ambientLight intensity={isLight ? 0.95 : 0.7} />
       <directionalLight
         position={[40, 70, 25]}
-        intensity={1.8}
+        intensity={isLight ? 1.35 : 1.8}
         color="#fff4e0"
         castShadow
       />
-      <SiteModel layout={layout} />
+      <SiteModel layout={layout} light={isLight} />
       <OrbitControls
         makeDefault
         enablePan

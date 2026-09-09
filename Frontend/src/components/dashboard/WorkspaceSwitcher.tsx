@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { ChevronRight, LayoutGrid, Search } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { isProjectPath, projectHomePath, swapProjectInPath } from "@/lib/paths";
+
+import { compactSearchClass, menuPanelClass } from "./panel";
 
 type WorkspaceSwitcherProps = {
   onNavigate?: () => void;
@@ -18,19 +20,12 @@ export function WorkspaceSwitcher({ onNavigate }: WorkspaceSwitcherProps) {
     selectedSite,
     selectedProject,
     selectSite,
-    selectProject,
     openProject,
   } = useWorkspace();
   const projectRoute = isProjectPath(pathname);
 
   function goToSite(siteId: string) {
     selectSite(siteId);
-    onNavigate?.();
-    void navigate("/");
-  }
-
-  function goToSiteOverview() {
-    selectProject(null);
     onNavigate?.();
     void navigate("/");
   }
@@ -46,68 +41,89 @@ export function WorkspaceSwitcher({ onNavigate }: WorkspaceSwitcherProps) {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+    <div className="flex min-w-0 items-center">
       <Switcher
         label="Site"
         value={selectedSite?.name ?? "Select site"}
         disabled={!sites.length}
+        searchPlaceholder="Find a site"
+        footer={{ to: "/sites", label: "View all sites" }}
       >
-        {sites.map((site) => (
-          <SwitcherOption
-            key={site.id}
-            selected={site.id === selectedSite?.id}
-            onSelect={() => goToSite(site.id)}
-          >
-            <span className="block truncate">{site.name}</span>
-            <span className="block truncate text-[11px] text-white/35">
-              {site.location}
-            </span>
-          </SwitcherOption>
-        ))}
-        {sites.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-white/40">No sites yet</p>
-        ) : null}
+        {(query) => {
+          const q = query.trim().toLowerCase();
+          const filtered = q
+            ? sites.filter(
+                (site) =>
+                  site.name.toLowerCase().includes(q) ||
+                  site.location.toLowerCase().includes(q),
+              )
+            : sites;
+
+          if (filtered.length === 0) {
+            return (
+              <p className="px-3 py-2 text-xs text-muted">No matching sites</p>
+            );
+          }
+
+          return filtered.map((site) => (
+            <SwitcherOption
+              key={site.id}
+              selected={site.id === selectedSite?.id}
+              onSelect={() => goToSite(site.id)}
+            >
+              {site.name}
+            </SwitcherOption>
+          ));
+        }}
       </Switcher>
+
+      <ChevronRight
+        className="mx-1 h-3.5 w-3.5 shrink-0 text-subtle sm:mx-1.5"
+        strokeWidth={2}
+        aria-hidden
+      />
 
       <Switcher
         label="Project"
-        labelClassName="text-[rgba(120,180,140,0.95)]"
         value={
           projectRoute
             ? (selectedProject?.name ?? "Select project")
-            : "Site overview"
+            : "Select project"
         }
         disabled={!selectedSite}
+        searchPlaceholder="Find a project"
+        footer={{ to: "/projects", label: "View all projects" }}
       >
-        <p className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-white/30">
-          {selectedSite ? `At ${selectedSite.name}` : "Select a site first"}
-        </p>
-        <SwitcherOption selected={!projectRoute} onSelect={goToSiteOverview}>
-          <span className="block truncate">Site overview</span>
-          <span className="block truncate text-[11px] text-white/35">
-            {selectedSite?.name ?? "Current site"}
-          </span>
-        </SwitcherOption>
-        {projects.length > 0 ? (
-          <div className="my-1 h-px bg-white/[0.06]" />
-        ) : null}
-        {projects.map((project) => (
-          <SwitcherOption
-            key={project.id}
-            selected={project.id === selectedProject?.id && projectRoute}
-            onSelect={() => goToProject(project)}
-          >
-            <span className="block truncate">{project.name}</span>
-            <span className="block truncate text-[11px] text-white/35">
-              {project.location}
-            </span>
-          </SwitcherOption>
-        ))}
-        {projects.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-white/40">
-            No projects at this site. Switch the site to see others.
-          </p>
-        ) : null}
+        {(query) => {
+          const q = query.trim().toLowerCase();
+          const filtered = q
+            ? projects.filter(
+                (project) =>
+                  project.name.toLowerCase().includes(q) ||
+                  project.location.toLowerCase().includes(q),
+              )
+            : projects;
+
+          if (filtered.length === 0) {
+            return (
+              <p className="px-3 py-2 text-xs text-muted">
+                {q
+                  ? "No matching projects"
+                  : "No projects at this site. Switch the site to see others."}
+              </p>
+            );
+          }
+
+          return filtered.map((project) => (
+            <SwitcherOption
+              key={project.id}
+              selected={project.id === selectedProject?.id && projectRoute}
+              onSelect={() => goToProject(project)}
+            >
+              {project.name}
+            </SwitcherOption>
+          ));
+        }}
       </Switcher>
     </div>
   );
@@ -115,23 +131,32 @@ export function WorkspaceSwitcher({ onNavigate }: WorkspaceSwitcherProps) {
 
 function Switcher({
   label,
-  labelClassName = "text-white/40",
   value,
   disabled,
+  searchPlaceholder,
+  footer,
   children,
 }: {
   label: string;
-  labelClassName?: string;
   value: string;
   disabled?: boolean;
-  children: React.ReactNode;
+  searchPlaceholder: string;
+  footer: { to: string; label: string };
+  children: (query: string) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const menuId = useId();
+  const searchId = useId();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setQuery("");
+      return;
+    }
+    searchRef.current?.focus();
     function onPointer(event: MouseEvent) {
       if (!ref.current?.contains(event.target as Node)) setOpen(false);
     }
@@ -155,32 +180,54 @@ function Switcher({
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen((current) => !current)}
-        className="flex min-w-0 max-w-[220px] items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-white/[0.04] disabled:opacity-50"
+        className="flex min-w-0 max-w-[220px] flex-col rounded-md px-1.5 py-1 text-left transition-colors hover:bg-fill disabled:opacity-50"
       >
-        <span className="min-w-0">
+        <span className="text-[11px] font-medium text-muted">{label}</span>
+        <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-medium text-fg">{value}</span>
           <span
-            className={`block text-[10px] font-medium uppercase tracking-[0.14em] ${labelClassName}`}
-          >
-            {label}
-          </span>
-          <span className="mt-0.5 block truncate text-sm font-semibold text-white">
-            {value}
-          </span>
+            aria-hidden
+            className={`inline-block shrink-0 -translate-x-[3px] border-x-[3.5px] border-x-transparent border-t-[4.5px] border-t-muted transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
         </span>
-        <ChevronDown
-          className={`h-3.5 w-3.5 shrink-0 text-white/35 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-          strokeWidth={1.75}
-        />
       </button>
       {open ? (
         <div
           id={menuId}
           role="listbox"
-          className="absolute left-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-xl border border-white/[0.08] bg-[#071015] py-1 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+          className={`${menuPanelClass} absolute left-0 top-full z-50 mt-1 w-72`}
         >
-          <div onClick={() => setOpen(false)}>{children}</div>
+          <div className="border-b border-edge p-2">
+            <label className="relative block">
+              <span className="sr-only">{searchPlaceholder}</span>
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" />
+              <input
+                ref={searchRef}
+                id={searchId}
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={searchPlaceholder}
+                className={`${compactSearchClass} w-full`}
+              />
+            </label>
+          </div>
+          <div
+            className="max-h-64 overflow-y-auto py-1"
+            onClick={() => setOpen(false)}
+          >
+            {children(query)}
+          </div>
+          <Link
+            to={footer.to}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 border-t border-edge px-3 py-2.5 text-sm text-muted transition-colors hover:bg-fill hover:text-fg"
+          >
+            <LayoutGrid className="h-3.5 w-3.5" strokeWidth={1.8} />
+            {footer.label}
+          </Link>
         </div>
       ) : null}
     </div>
@@ -202,13 +249,16 @@ function SwitcherOption({
       role="option"
       aria-selected={selected}
       onClick={onSelect}
-      className={`block w-full px-3 py-2 text-left text-sm transition-colors ${
+      className={`relative block w-full px-3 py-2 text-left text-sm transition-colors ${
         selected
-          ? "bg-[#e6740a]/12 text-white"
-          : "text-white/75 hover:bg-white/[0.04] hover:text-white"
+          ? "bg-fill font-medium text-fg"
+          : "text-secondary hover:bg-fill hover:text-fg"
       }`}
     >
-      {children}
+      {selected ? (
+        <span className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-accent" />
+      ) : null}
+      <span className="block truncate">{children}</span>
     </button>
   );
 }

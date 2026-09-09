@@ -49,7 +49,7 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   return (
     <div
       ref={frameRef}
-      className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#010609]"
+      className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-edge bg-page"
       onMouseMove={(event) => {
         const box = frameRef.current?.getBoundingClientRect();
         if (!box) return;
@@ -70,19 +70,19 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
 
       <div className="pointer-events-none absolute inset-0">
         <div className="pointer-events-none absolute left-3 top-3 max-w-[240px] space-y-2 sm:left-4 sm:top-4">
-          <div className="rounded-xl border border-white/10 bg-[#010609]/88 px-3 py-2.5 backdrop-blur-sm">
-            <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#e6740a]">
+          <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
+            <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
               <Map className="h-3 w-3" />
               Sitemap
             </p>
-            <p className="mt-1 truncate text-sm font-semibold text-white">
+            <p className="mt-1 truncate text-sm font-semibold text-fg">
               {projectName}
             </p>
-            <p className="mt-0.5 text-[11px] text-white/40">
+            <p className="mt-0.5 text-[11px] text-muted">
               2D SLD of the digital twin
             </p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-[#010609]/88 px-3 py-2.5 backdrop-blur-sm">
+          <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
             <dl className="space-y-1.5 text-[11px]">
               <Row label="Export" value={`${model.exportMw} MW`} />
               <Row label="Plant load" value={`${model.plantLoadPct}%`} />
@@ -96,7 +96,7 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
         <div className="pointer-events-auto absolute right-3 top-3 sm:right-4 sm:top-4">
           <Link
             to={projectTwinPath(twin.projectId)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#010609]/88 px-3 py-2 text-xs font-medium text-white/70 backdrop-blur-sm transition-colors hover:border-white/20 hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-edge-strong bg-page/90 px-3 py-2 text-xs font-medium text-secondary backdrop-blur-sm transition-colors hover:border-edge-strong hover:text-fg"
           >
             <Box className="h-3.5 w-3.5" />
             Open 3D twin
@@ -137,8 +137,8 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-white/40">{label}</dt>
-      <dd className="font-medium tabular-nums text-white">{value}</dd>
+      <dt className="text-muted">{label}</dt>
+      <dd className="font-medium tabular-nums text-fg">{value}</dd>
     </div>
   );
 }
@@ -161,13 +161,13 @@ function HoverCard({
   const top = Math.min(Math.max(12, y + 16), maxTop);
   return (
     <div
-      className="pointer-events-none absolute z-20 w-[236px] rounded-xl border border-white/12 bg-[#010609]/94 px-3 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.45)] backdrop-blur-md"
+      className="pointer-events-none absolute z-20 w-[236px] rounded-xl border border-edge-strong bg-page/95 px-3 py-2.5 shadow-[var(--alcaster-shadow)] backdrop-blur-md"
       style={{ left, top }}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-white">{component.name}</p>
-          <p className="text-[11px] text-white/40">{component.typeLabel}</p>
+          <p className="text-sm font-semibold text-fg">{component.name}</p>
+          <p className="text-[11px] text-muted">{component.typeLabel}</p>
         </div>
         <span
           className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em]"
@@ -179,7 +179,7 @@ function HoverCard({
           {component.status}
         </span>
       </div>
-      <dl className="mt-2 space-y-1.5 border-t border-white/[0.06] pt-2 text-[11px]">
+      <dl className="mt-2 space-y-1.5 border-t border-edge pt-2 text-[11px]">
         {component.rows.map((row) => (
           <Row key={row.label} label={row.label} value={row.value} />
         ))}
@@ -198,8 +198,8 @@ function SldStrip({
   onHoverKind: (kind: SitemapKind | null) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#010609]/88 px-3 py-2.5 backdrop-blur-sm">
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-white/35">
+    <div className="overflow-hidden rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
+      <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
         Single-line · arrays to grid
       </p>
       <div
@@ -211,7 +211,7 @@ function SldStrip({
           return (
             <div key={stage.kind} className="flex min-w-0 items-center">
               {index > 0 ? (
-                <span className="mx-1 h-px w-4 shrink-0 bg-white/15 sm:w-7" />
+                <span className="mx-1 h-px w-4 shrink-0 bg-fill-strong sm:w-7" />
               ) : null}
               <button
                 type="button"
@@ -220,12 +220,12 @@ function SldStrip({
                 onBlur={() => onHoverKind(null)}
                 className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
                   active
-                    ? "border-[#e6740a]/50 bg-[#e6740a]/12"
-                    : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                    ? "border-[#e6740a]/50 bg-accent/12"
+                    : "border-edge-strong bg-fill hover:border-edge-strong"
                 }`}
               >
-                <p className="text-[11px] font-medium text-white">{stage.label}</p>
-                <p className="text-[10px] tabular-nums text-white/40">
+                <p className="text-[11px] font-medium text-fg">{stage.label}</p>
+                <p className="text-[10px] tabular-nums text-muted">
                   {modelCounts[stage.kind] ?? 0}
                 </p>
               </button>

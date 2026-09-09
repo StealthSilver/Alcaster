@@ -10,12 +10,15 @@ import {
 
 import {
   ApiError,
+  deleteAccountRequest,
   getCurrentUserRequest,
   requestAccessRequest,
   signInRequest,
   signOutRequest,
+  updateProfileRequest,
   type AuthUser,
   type RequestAccessPayload,
+  type UpdateProfilePayload,
 } from "@/lib/api";
 
 type AuthContextValue = {
@@ -23,6 +26,8 @@ type AuthContextValue = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   requestAccess: (payload: RequestAccessPayload) => Promise<string>;
+  updateProfile: (payload: UpdateProfilePayload) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -65,6 +70,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.message;
   }, []);
 
+  const updateProfile = useCallback(async (payload: UpdateProfilePayload) => {
+    const data = await updateProfileRequest(payload);
+    setUser(data.user);
+  }, []);
+
+  const deleteAccount = useCallback(async (password: string) => {
+    await deleteAccountRequest(password);
+    setUser(null);
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await signOutRequest();
@@ -74,8 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, signIn, requestAccess, signOut }),
-    [user, loading, signIn, requestAccess, signOut],
+    () => ({
+      user,
+      loading,
+      signIn,
+      requestAccess,
+      updateProfile,
+      deleteAccount,
+      signOut,
+    }),
+    [user, loading, signIn, requestAccess, updateProfile, deleteAccount, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

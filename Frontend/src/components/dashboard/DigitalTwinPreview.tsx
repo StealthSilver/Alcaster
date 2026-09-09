@@ -3,6 +3,8 @@ import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
+import { panelClass } from "./panel";
+
 const STAGES = [
   { id: "arrays", label: "Solar Arrays", x: 80, y: 48 },
   { id: "inverters", label: "Inverters", x: 220, y: 48 },
@@ -22,36 +24,28 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.005 }}
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] sm:p-6"
+      className={`group relative overflow-hidden ${panelClass} p-4 sm:p-5`}
       aria-label="Digital twin overview"
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 50% at 50% 40%, rgba(230,116,10,0.08), transparent 70%)",
-        }}
-      />
-
       <div className="relative flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-white">
-            Digital Twin Overview
+          <h2 className="text-sm font-semibold text-fg">
+            Digital twin
           </h2>
-          <p className="mt-1 text-sm text-white/40">
+          <p className="mt-0.5 text-xs text-muted">
             Energy path from arrays to grid
           </p>
         </div>
         <Link
           to={href}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#e6740a] transition-opacity hover:opacity-80"
+          className="inline-flex items-center gap-1 text-xs font-medium text-muted transition-colors hover:text-fg"
         >
           Open Digital Twin
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
-      <div className="relative mt-6 overflow-hidden rounded-xl border border-white/[0.05] bg-[#010609]/60 px-2 py-8 sm:px-4">
+      <div className="relative mt-6 overflow-hidden rounded-xl border border-edge bg-page/60 px-2 py-8 sm:px-4">
         <svg
           viewBox="0 0 720 160"
           className="mx-auto h-auto w-full max-w-3xl"
@@ -62,7 +56,7 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
             <linearGradient id="flowLine" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#e6740a" stopOpacity="0.15" />
               <stop offset="50%" stopColor="#e6740a" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="var(--alcaster-fg)" stopOpacity="0.35" />
             </linearGradient>
             <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="3" result="blur" />
@@ -76,7 +70,7 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
           {/* Base connection line */}
           <path
             d={`M ${STAGES[0].x} 72 L ${STAGES[STAGES.length - 1].x} 72`}
-            stroke="rgba(255,255,255,0.08)"
+            stroke="color-mix(in srgb, var(--alcaster-fg) 8%, transparent)"
             strokeWidth={1.5}
             fill="none"
           />
@@ -126,8 +120,8 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
                 width={72}
                 height={48}
                 rx={10}
-                fill="rgba(255,255,255,0.03)"
-                stroke="rgba(255,255,255,0.1)"
+                fill="color-mix(in srgb, var(--alcaster-fg) 3%, transparent)"
+                stroke="color-mix(in srgb, var(--alcaster-fg) 10%, transparent)"
                 strokeWidth={1}
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -137,7 +131,7 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
                 cx={stage.x}
                 cy={72}
                 r={4}
-                fill={index === 0 ? "#e6740a" : "rgba(255,255,255,0.7)"}
+                fill={index === 0 ? "#e6740a" : "color-mix(in srgb, var(--alcaster-fg) 70%, transparent)"}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.55 + index * 0.08 }}
@@ -151,7 +145,7 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
                   stroke={
                     index === 0
                       ? "rgba(230,116,10,0.35)"
-                      : "rgba(255,255,255,0.12)"
+                      : "color-mix(in srgb, var(--alcaster-fg) 12%, transparent)"
                   }
                   strokeWidth={1}
                   animate={{ opacity: [0.35, 0.8, 0.35], scale: [1, 1.15, 1] }}
@@ -167,7 +161,7 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
                 x={stage.x}
                 y={128}
                 textAnchor="middle"
-                className="fill-white/50"
+                className="fill-muted"
                 fontSize={11}
                 fontFamily="Inter, sans-serif"
                 fontWeight={500}
@@ -178,7 +172,7 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
           ))}
         </svg>
 
-        <div className="mt-2 flex justify-center gap-6 text-[10px] font-medium uppercase tracking-[0.14em] text-white/25 sm:hidden">
+        <div className="mt-2 flex justify-center gap-6 text-[10px] font-medium uppercase tracking-[0.14em] text-subtle sm:hidden">
           {STAGES.map((s) => (
             <span key={s.id}>{s.label.split(" ")[0]}</span>
           ))}

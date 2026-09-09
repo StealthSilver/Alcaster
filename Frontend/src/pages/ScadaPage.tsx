@@ -61,20 +61,19 @@ export function ScadaPage() {
   return (
     <DashboardShell
       user={shellUser}
-      dateLabel=""
       title="SCADA"
       layout={ready ? "fill" : "default"}
     >
       {loading ? (
-        <p className="text-sm text-white/40">Loading SCADA…</p>
+        <p className="text-sm text-muted">Loading SCADA…</p>
       ) : error ? (
-        <p className="rounded-xl border border-[#f07167]/25 bg-[#f07167]/10 px-4 py-3 text-sm text-[#f07167]">
+        <p className="rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}
         </p>
       ) : dashboard ? (
         <ScadaViewer dashboard={dashboard} twin={twin} />
       ) : (
-        <p className="text-sm text-white/40">Project not found.</p>
+        <p className="text-sm text-muted">Project not found.</p>
       )}
     </DashboardShell>
   );

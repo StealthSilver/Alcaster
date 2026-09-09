@@ -7,9 +7,15 @@ export const siteStatusLabel: Record<SiteStatus, string> = {
 };
 
 export const siteStatusColor: Record<SiteStatus, string> = {
-  active: "rgba(120, 180, 140, 0.95)",
-  pending: "#e6740a",
-  on_hold: "rgba(255,255,255,0.35)",
+  active: "var(--alcaster-success)",
+  pending: "var(--alcaster-accent)",
+  on_hold: "var(--alcaster-muted)",
+};
+
+export const siteStatusLozenge: Record<SiteStatus, string> = {
+  active: "bg-[var(--lozenge-active-bg)] text-[var(--lozenge-active-fg)]",
+  pending: "bg-[var(--lozenge-pending-bg)] text-[var(--lozenge-pending-fg)]",
+  on_hold: "bg-[var(--lozenge-hold-bg)] text-[var(--lozenge-hold-fg)]",
 };
 
 export const projectTypeLabel: Record<ProjectType, string> = {
@@ -33,16 +39,23 @@ export const taskStatusLabel: Record<TaskStatus, string> = {
 };
 
 export const projectStatusColor: Record<ProjectStatus, string> = {
-  active: "rgba(120, 180, 140, 0.95)",
-  pending: "#e6740a",
-  on_hold: "rgba(255,255,255,0.35)",
-  completed: "rgba(120, 180, 140, 0.7)",
+  active: "var(--alcaster-success)",
+  pending: "var(--alcaster-accent)",
+  on_hold: "var(--alcaster-muted)",
+  completed: "var(--alcaster-success)",
+};
+
+export const projectStatusLozenge: Record<ProjectStatus, string> = {
+  active: "bg-[var(--lozenge-active-bg)] text-[var(--lozenge-active-fg)]",
+  pending: "bg-[var(--lozenge-pending-bg)] text-[var(--lozenge-pending-fg)]",
+  on_hold: "bg-[var(--lozenge-hold-bg)] text-[var(--lozenge-hold-fg)]",
+  completed: "bg-[var(--lozenge-active-bg)] text-[var(--lozenge-active-fg)]",
 };
 
 export const taskStatusColor: Record<TaskStatus, string> = {
-  open: "rgba(255,255,255,0.45)",
-  in_progress: "#e6740a",
-  completed: "rgba(120, 180, 140, 0.95)",
+  open: "var(--alcaster-muted)",
+  in_progress: "var(--alcaster-accent)",
+  completed: "var(--alcaster-success)",
 };
 
 export function formatTimeAgo(iso: string): string {

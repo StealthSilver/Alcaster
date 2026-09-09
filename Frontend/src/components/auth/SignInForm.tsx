@@ -4,6 +4,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
+import { AFTER_AUTH_PATH } from "@/lib/paths";
 import { validateSignIn } from "@/lib/validation";
 
 import { Field } from "./Field";
@@ -32,7 +33,7 @@ export function SignInForm() {
     setSubmitting(true);
     try {
       await signIn(email, password);
-      void navigate("/", { replace: true });
+      void navigate(AFTER_AUTH_PATH, { replace: true });
     } catch (error) {
       if (error instanceof ApiError) {
         setFields(error.fields);
@@ -50,7 +51,7 @@ export function SignInForm() {
       {formError && !fields.email && !fields.password ? (
         <p
           role="alert"
-          className="rounded-lg border border-[#f07167]/25 bg-[#f07167]/10 px-3 py-2 text-sm text-[#f07167]"
+          className="rounded-lg border border-danger/25 bg-danger/10 px-3 py-2 text-sm text-danger"
         >
           {formError}
         </p>
@@ -98,7 +99,7 @@ export function SignInForm() {
           <button
             type="button"
             onClick={() => setShowPassword((value) => !value)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-white/35 transition-colors hover:text-white/70"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted transition-colors hover:text-secondary"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? (
@@ -113,7 +114,7 @@ export function SignInForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#e6740a] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#f0821a] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? (
           <>

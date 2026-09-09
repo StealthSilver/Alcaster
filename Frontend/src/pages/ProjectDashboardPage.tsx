@@ -53,13 +53,12 @@ export function ProjectDashboardPage() {
   return (
     <DashboardShell
       user={shellUser}
-      dateLabel={data?.dateLabel ?? ""}
       title={project?.name ?? "Project"}
     >
       {loading ? (
-        <p className="text-sm text-white/40">Loading project…</p>
+        <p className="text-sm text-muted">Loading project…</p>
       ) : error ? (
-        <p className="rounded-xl border border-[#f07167]/25 bg-[#f07167]/10 px-4 py-3 text-sm text-[#f07167]">
+        <p className="rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}
         </p>
       ) : data ? (

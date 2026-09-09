@@ -12,19 +12,19 @@ import { SiteSidebar } from "./SiteSidebar";
 type DashboardShellProps = {
   children: React.ReactNode;
   user: DashboardUser;
-  dateLabel: string;
   title?: string;
   actions?: React.ReactNode;
   layout?: "default" | "fill";
+  hideHeader?: boolean;
 };
 
 export function DashboardShell({
   children,
   user,
-  dateLabel,
   title = "Dashboard",
   actions,
   layout = "default",
+  hideHeader = false,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { pathname } = useLocation();
@@ -33,7 +33,7 @@ export function DashboardShell({
 
   return (
     <div
-      className={`flex flex-col bg-[#010609] font-sans text-white antialiased ${
+      className={`flex flex-col bg-page font-sans text-fg antialiased ${
         fill ? "h-screen overflow-hidden" : "min-h-screen"
       }`}
     >
@@ -57,10 +57,16 @@ export function DashboardShell({
                 : "mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-6"
             }
           >
-            <Header title={title} dateLabel={dateLabel} actions={actions} />
+            {hideHeader ? null : (
+              <Header title={title} actions={actions} />
+            )}
             <main
               className={
-                fill ? "mt-4 flex min-h-0 flex-1 flex-col" : "mt-6 pb-10"
+                fill
+                  ? "mt-4 flex min-h-0 flex-1 flex-col"
+                  : hideHeader
+                    ? "pb-10"
+                    : "mt-6 pb-10"
               }
             >
               {children}

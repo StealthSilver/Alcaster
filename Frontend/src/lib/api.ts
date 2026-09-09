@@ -6,6 +6,7 @@ export type AuthUser = {
   initials: string;
   organizationId: string | null;
   organizationName: string | null;
+  createdAt: string | null;
 };
 
 export type RequestAccessPayload = {
@@ -89,6 +90,26 @@ export function requestAccessRequest(payload: RequestAccessPayload) {
 
 export function getCurrentUserRequest() {
   return request<{ user: AuthUser }>("/api/auth/me");
+}
+
+export type UpdateProfilePayload = {
+  name: string;
+  currentPassword?: string;
+  newPassword?: string;
+};
+
+export function updateProfileRequest(payload: UpdateProfilePayload) {
+  return request<{ user: AuthUser }>("/api/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAccountRequest(password: string) {
+  return request<{ message: string }>("/api/auth/me", {
+    method: "DELETE",
+    body: JSON.stringify({ password }),
+  });
 }
 
 export function signOutRequest() {

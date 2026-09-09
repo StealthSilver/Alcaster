@@ -61,20 +61,19 @@ export function DigitalTwinPage() {
   return (
     <DashboardShell
       user={shellUser}
-      dateLabel=""
       title="Digital Twin"
       layout={showForm || loading || error ? "default" : "fill"}
     >
       {loading ? (
-        <p className="text-sm text-white/40">Loading digital twin…</p>
+        <p className="text-sm text-muted">Loading digital twin…</p>
       ) : error ? (
-        <p className="rounded-xl border border-[#f07167]/25 bg-[#f07167]/10 px-4 py-3 text-sm text-[#f07167]">
+        <p className="rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}
         </p>
       ) : project && showForm ? (
         <div className="space-y-5">
           <div>
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-muted">
               Enter the plant details used to generate a dummy site model —
               land, modules, cabling, inverters, and the grid yard.
             </p>
@@ -96,7 +95,7 @@ export function DigitalTwinPage() {
           onRebuild={() => setEditing(true)}
         />
       ) : (
-        <p className="text-sm text-white/40">Project not found.</p>
+        <p className="text-sm text-muted">Project not found.</p>
       )}
     </DashboardShell>
   );

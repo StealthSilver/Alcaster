@@ -12,10 +12,10 @@ export function PlantPortfolio({ plants }: PlantPortfolioProps) {
     <section aria-label="Your plants">
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-white">
+          <h2 className="text-base font-semibold tracking-tight text-fg">
             Your Plants
           </h2>
-          <p className="mt-1 text-sm text-white/40">
+          <p className="mt-1 text-sm text-muted">
             Portfolio assets and live operating status
           </p>
         </div>

@@ -62,18 +62,18 @@ export function RequestAccessForm() {
 
   if (success) {
     return (
-      <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-6 text-center">
+      <div className="rounded-xl border border-edge bg-fill px-4 py-6 text-center">
         <CheckCircle2
-          className="mx-auto h-8 w-8 text-[rgba(120,180,140,0.9)]"
+          className="mx-auto h-8 w-8 text-success"
           strokeWidth={1.6}
         />
-        <h2 className="mt-3 text-base font-semibold text-white">
+        <h2 className="mt-3 text-base font-semibold text-fg">
           Request received
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-white/50">{success}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{success}</p>
         <Link
           to="/signin"
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-[#e6740a] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#f0821a]"
+          className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover"
         >
           Back to Sign In
         </Link>
@@ -86,7 +86,7 @@ export function RequestAccessForm() {
       {formError ? (
         <p
           role="alert"
-          className="rounded-lg border border-[#f07167]/25 bg-[#f07167]/10 px-3 py-2 text-sm text-[#f07167]"
+          className="rounded-lg border border-danger/25 bg-danger/10 px-3 py-2 text-sm text-danger"
         >
           {formError}
         </p>
@@ -158,7 +158,7 @@ export function RequestAccessForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#e6740a] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#f0821a] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? (
           <>

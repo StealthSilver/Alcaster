@@ -48,7 +48,7 @@ export function AnimatedMetric({
     <span className={`tabular-nums ${className}`}>
       <motion.span>{text}</motion.span>
       {unit ? (
-        <span className="ml-1.5 text-[0.55em] font-medium tracking-wide text-white/50">
+        <span className="ml-1.5 text-[0.55em] font-medium tracking-wide text-muted">
           {unit}
         </span>
       ) : null}

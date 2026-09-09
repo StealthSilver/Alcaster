@@ -49,14 +49,13 @@ export function DashboardPage() {
   return (
     <DashboardShell
       user={shellUser}
-      dateLabel={data?.dateLabel ?? ""}
       title="Dashboard"
       actions={<CreateProjectButton />}
     >
       {loading ? (
-        <p className="text-sm text-white/40">Loading site overview…</p>
+        <p className="text-sm text-muted">Loading site overview…</p>
       ) : error ? (
-        <p className="rounded-xl border border-[#f07167]/25 bg-[#f07167]/10 px-4 py-3 text-sm text-[#f07167]">
+        <p className="rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}
         </p>
       ) : data ? (

@@ -1,3 +1,5 @@
+export const AFTER_AUTH_PATH = "/sites";
+
 export function isProjectPath(pathname: string): boolean {
   return /^\/projects\/(?!new(?:\/|$))[^/]+/.test(pathname);
 }

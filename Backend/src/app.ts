@@ -22,7 +22,7 @@ export function createApp() {
         callback(null, false);
       },
       credentials: true,
-      methods: ["GET", "POST", "OPTIONS"],
+      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type"],
     } satisfies CorsOptions),
   );

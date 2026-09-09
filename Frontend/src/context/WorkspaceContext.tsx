@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -63,6 +64,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [siteId, setSiteId] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const userIdRef = useRef<string | null>(null);
 
   const persist = useCallback(
     (nextSiteId: string | null, nextProjectId: string | null) => {
@@ -86,7 +88,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       null;
     setSites(nextSites);
     setSiteId(nextSiteId);
-    persist(nextSiteId, stored.projectId);
+    persist(nextSiteId, null);
   }, [persist, siteId, user]);
 
   const refreshProjects = useCallback(async (forSiteId?: string) => {
@@ -105,9 +107,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [persist, siteId, user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      if (userIdRef.current) {
+        localStorage.removeItem(storageKey(userIdRef.current));
+        userIdRef.current = null;
+      }
+      setSites([]);
+      setProjects([]);
+      setSiteId(null);
+      setProjectId(null);
+      setLoading(true);
+      return;
+    }
+    userIdRef.current = user.id;
     let cancelled = false;
     const stored = readStored(user.id);
+    setLoading(true);
 
     listSitesRequest()
       .then(({ sites: nextSites }) => {
@@ -118,8 +133,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           null;
         setSites(nextSites);
         setSiteId(nextSiteId);
-        setProjectId(stored.projectId);
-        persist(nextSiteId, stored.projectId);
+        setProjectId(null);
+        persist(nextSiteId, null);
       })
       .catch((error: unknown) => {
         if (!(error instanceof ApiError) || error.status !== 401) {

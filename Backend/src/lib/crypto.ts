@@ -59,6 +59,7 @@ export function toPublicUser(user: {
   role: string;
   organizationId?: string | null;
   organizationName?: string | null;
+  createdAt?: string | null;
 }): PublicUser {
   return {
     id: user.id,
@@ -68,5 +69,6 @@ export function toPublicUser(user: {
     initials: getInitials(user.name),
     organizationId: user.organizationId ?? null,
     organizationName: user.organizationName ?? null,
+    createdAt: user.createdAt ?? null,
   };
 }
