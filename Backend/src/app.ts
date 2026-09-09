@@ -1,5 +1,5 @@
 import cookieParser from "cookie-parser";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import express from "express";
 
 import { config } from "./config.js";
@@ -24,7 +24,7 @@ export function createApp() {
       credentials: true,
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type"],
-    }),
+    } satisfies CorsOptions),
   );
   app.use(express.json({ limit: "16kb" }));
   app.use(cookieParser());
