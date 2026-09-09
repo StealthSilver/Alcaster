@@ -18,7 +18,7 @@ services:
       - key: MONGODB_URI
         sync: false
       - key: CORS_ORIGIN
-        sync: false
+        value: https://alcaster-w6n5.vercel.app,https://alcaster-wjnn.vercel.app
       - key: DEMO_EMAIL
         sync: false
       - key: DEMO_PASSWORD

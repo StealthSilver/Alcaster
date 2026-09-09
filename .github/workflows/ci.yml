@@ -42,7 +42,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_API_URL: https://alcaster-api.onrender.com
+          VITE_API_URL: https://alcaster.onrender.com
 
   landing:
     name: Landing
@@ -60,4 +60,4 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          NEXT_PUBLIC_SITE_URL: https://alcaster.vercel.app
+          NEXT_PUBLIC_SITE_URL: https://alcaster-wjnn.vercel.app

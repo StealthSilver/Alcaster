@@ -29,7 +29,9 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "";
+// Local `vite` always uses the /api proxy in vite.config.ts (localhost:4000).
+// Production builds still honor VITE_API_URL (e.g. Render).
+const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL ?? "");
 
 type ErrorBody = {
   message?: string;
