@@ -3,7 +3,11 @@ import type { TwinLayout } from "@/lib/twinLayout";
 import { buildTwinLayout } from "@/lib/twinLayout";
 import type { TwinPlant } from "@/lib/twinPlant";
 
-/** Physical asset types for Phase 2 identity model. */
+/**
+ * Asset types for the canonical Phase 2 physical model.
+ * STRING and FEEDER are electrical entities (Phase 3) that reuse the same
+ * asset registry / selectedAssetId — they are not a second asset database.
+ */
 export const ASSET_TYPES = [
   "PLANT",
   "BLOCK",
@@ -13,6 +17,7 @@ export const ASSET_TYPES = [
   "COMBINER",
   "INVERTER",
   "TRANSFORMER",
+  "FEEDER",
   "SUBSTATION",
   "BUILDING",
   "CONTROL_ROOM",
@@ -56,8 +61,9 @@ export type Asset = {
   geoPosition?: AssetGeoPosition;
   geometry?: { type: string; modelId?: string };
   metadata: Record<string, unknown>;
-  /** Extension points for Phase 3+ (intentionally unused in Phase 2). */
+  /** Phase 3: connection IDs from the electrical topology graph. */
   electricalConnections?: unknown[];
+  /** Phase 4 extension point — not populated in Phase 3. */
   telemetry?: unknown;
   maintenanceRecords?: unknown[];
   inspectionRecords?: unknown[];
@@ -74,6 +80,7 @@ export type AssetCounts = {
   combiners: number;
   inverters: number;
   transformers: number;
+  feeders: number;
   substations: number;
   buildings: number;
   weatherStations: number;
@@ -93,6 +100,8 @@ export type AssetModel = {
   tableIndexToId: Record<number, string>;
   /** Visual layout table index → assetId */
   visualTableAssetIds: string[];
+  /** Phase 3 electrical topology (attached by buildElectricalModel). */
+  electrical?: import("@/lib/electricalModel").ElectricalModel;
   generatedAt: string;
   error?: string;
 };
@@ -211,6 +220,7 @@ function emptyCounts(): AssetCounts {
     combiners: 0,
     inverters: 0,
     transformers: 0,
+    feeders: 0,
     substations: 0,
     buildings: 0,
     weatherStations: 0,
@@ -351,6 +361,9 @@ export function countAssets(assets: Record<string, Asset>): AssetCounts {
       case "TRANSFORMER":
         counts.transformers += 1;
         break;
+      case "FEEDER":
+        counts.feeders += 1;
+        break;
       case "SUBSTATION":
         counts.substations += 1;
         break;
@@ -401,6 +414,8 @@ export function assetTypeLabel(type: AssetType): string {
       return "Inverter";
     case "TRANSFORMER":
       return "Transformer";
+    case "FEEDER":
+      return "MV Feeder";
     case "SUBSTATION":
       return "Substation";
     case "BUILDING":
@@ -483,6 +498,26 @@ export function focusableAssetId(
 ): string | null {
   let current = model.assets[assetId];
   if (!current) return null;
+  // Strings / feeders may need a related physical asset for camera focus.
+  if (!current.position) {
+    if (current.assetType === "STRING") {
+      const tableId = current.metadata.tableAssetId;
+      if (typeof tableId === "string" && model.assets[tableId]?.position) {
+        return tableId;
+      }
+      const combinerId = current.metadata.combinerId;
+      if (typeof combinerId === "string" && model.assets[combinerId]?.position) {
+        return combinerId;
+      }
+    }
+    if (current.assetType === "FEEDER") {
+      const sources = current.metadata.sourceTransformerIds;
+      if (Array.isArray(sources) && typeof sources[0] === "string") {
+        const trf = model.assets[sources[0]];
+        if (trf?.position) return trf.assetId;
+      }
+    }
+  }
   while (current) {
     if (current.position) return current.assetId;
     if (!current.parentId) break;

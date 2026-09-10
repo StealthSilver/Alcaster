@@ -493,7 +493,17 @@ function SagSpan({
   );
 }
 
-function Electrical({ layout }: { layout: TwinLayout }) {
+function Electrical({
+  layout,
+  electricalPaths,
+  highlightedIds,
+  electricalMode,
+}: {
+  layout: TwinLayout;
+  electricalPaths?: Array<{ points: [number, number, number][]; active?: boolean }>;
+  highlightedIds?: Set<string> | null;
+  electricalMode?: boolean;
+}) {
   if (layout.plant.visualStyle === "simple") return null;
   const xfmr = layout.transformers[0];
   const sub = layout.substations[0];
@@ -507,6 +517,12 @@ function Electrical({ layout }: { layout: TwinLayout }) {
           yaw: Math.atan2(sub.x - xfmr.x, sub.z - xfmr.z),
         }
       : null;
+
+  const activePaths = (electricalPaths ?? []).filter((p) => p.active);
+  const idlePaths =
+    electricalMode
+      ? (electricalPaths ?? []).filter((p) => !p.active).slice(0, 80)
+      : [];
 
   return (
     <group>
@@ -567,6 +583,26 @@ function Electrical({ layout }: { layout: TwinLayout }) {
           />
         );
       })}
+
+      {idlePaths.length > 0 ? (
+        <CableBatch
+          paths={idlePaths.map((p) => p.points)}
+          color="#6b7280"
+        />
+      ) : null}
+      {activePaths.length > 0 ? (
+        <CableBatch
+          paths={activePaths.map((p) => p.points)}
+          color="#e6740a"
+        />
+      ) : null}
+      {electricalMode && !electricalPaths?.length ? (
+        <>
+          <CableBatch paths={layout.dcFeeders.slice(0, 60)} color="#64748b" />
+          <CableBatch paths={layout.acCables.slice(0, 40)} color="#94a3b8" />
+        </>
+      ) : null}
+      {highlightedIds ? null : null}
     </group>
   );
 }
@@ -861,12 +897,21 @@ export function SiteModel({
   layout,
   selectedAssetId,
   onSelectAsset,
+  highlightedAssetIds,
+  electricalMode,
+  electricalPaths,
 }: {
   layout: TwinLayout;
   light?: boolean;
   selectedAssetId?: string | null;
   onSelectAsset?: (assetId: string | null) => void;
+  highlightedAssetIds?: Set<string> | null;
+  electricalMode?: boolean;
+  electricalPaths?: Array<{ points: [number, number, number][]; active?: boolean }>;
 }) {
+  const isHighlighted = (assetId?: string) =>
+    Boolean(assetId && highlightedAssetIds?.has(assetId));
+
   return (
     <group
       onPointerMissed={() => onSelectAsset?.(null)}
@@ -879,7 +924,12 @@ export function SiteModel({
         selectedAssetId={selectedAssetId}
         onSelectAsset={onSelectAsset}
       />
-      <Electrical layout={layout} />
+      <Electrical
+        layout={layout}
+        electricalPaths={electricalPaths}
+        highlightedIds={highlightedAssetIds}
+        electricalMode={electricalMode}
+      />
       <Combiners
         layout={layout}
         selectedAssetId={selectedAssetId}
@@ -895,7 +945,9 @@ export function SiteModel({
           key={xfmr.assetId ?? i}
           pose={xfmr}
           dry={layout.plant.transformerType === "dry"}
-          selected={selectedAssetId === xfmr.assetId}
+          selected={
+            selectedAssetId === xfmr.assetId || isHighlighted(xfmr.assetId)
+          }
           onSelect={onSelectAsset}
         />
       ))}

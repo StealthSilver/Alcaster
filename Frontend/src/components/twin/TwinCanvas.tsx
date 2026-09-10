@@ -21,6 +21,8 @@ type TwinCanvasProps = {
   selectedAssetId: string | null;
   focusToken: number;
   onSelectAsset: (assetId: string | null) => void;
+  highlightedAssetIds?: Set<string> | null;
+  electricalMode?: boolean;
 };
 
 type ControlsLike = {
@@ -79,6 +81,8 @@ export function TwinCanvas({
   selectedAssetId,
   focusToken,
   onSelectAsset,
+  highlightedAssetIds,
+  electricalMode,
 }: TwinCanvasProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -95,6 +99,32 @@ export function TwinCanvas({
       : isLight
         ? "#e8eef2"
         : "#070d12";
+
+  const electricalPaths = useMemo(() => {
+    const electrical = assets.electrical;
+    if (!electrical) return [];
+    const highlight = highlightedAssetIds;
+    const paths: Array<{ points: [number, number, number][]; active?: boolean }> =
+      [];
+    const limit = electricalMode ? 120 : 40;
+    for (const conn of electrical.connections) {
+      if (!conn.path3d || conn.path3d.length < 2) continue;
+      const active = Boolean(
+        highlight &&
+          highlight.has(conn.fromAssetId) &&
+          highlight.has(conn.toAssetId),
+      );
+      if (!electricalMode && !active) continue;
+      paths.push({
+        points: conn.path3d.map(
+          (p) => [p.x, p.y, p.z] as [number, number, number],
+        ),
+        active,
+      });
+      if (paths.length >= limit) break;
+    }
+    return paths;
+  }, [assets.electrical, electricalMode, highlightedAssetIds]);
 
   return (
     <Canvas
@@ -140,6 +170,9 @@ export function TwinCanvas({
           light={isLight}
           selectedAssetId={selectedAssetId}
           onSelectAsset={onSelectAsset}
+          highlightedAssetIds={highlightedAssetIds}
+          electricalMode={electricalMode}
+          electricalPaths={electricalPaths}
         />
       </group>
       <OrbitControls

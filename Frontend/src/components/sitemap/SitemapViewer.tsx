@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FolderTree, Map, Network } from "lucide-react";
+import { FolderTree, Map, Network, Zap } from "lucide-react";
 
 import { AssetDetailsPanel } from "@/components/twin/AssetDetailsPanel";
 import { SitemapDiagram } from "@/components/sitemap/SitemapDiagram";
 import { SitemapTree } from "@/components/sitemap/SitemapTree";
+import { SingleLineDiagram } from "@/components/sitemap/SingleLineDiagram";
 import { useAssetSelection } from "@/hooks/useAssetSelection";
 import type { TwinRecord } from "@/lib/api";
+import { buildElectricalTree } from "@/lib/electricalTree";
+import type { ElectricalPath } from "@/lib/electricalModel";
 import {
   buildSitemapModel,
   buildSitemapTree,
@@ -17,13 +20,15 @@ import {
   type SitemapStatus,
   type SitemapTreeNode,
 } from "@/lib/sitemapModel";
+import type { SldLevel } from "@/lib/sldModel";
 
 type SitemapViewerProps = {
   twin: TwinRecord;
   projectName: string;
 };
 
-type ViewMode = "map" | "tree";
+type ViewMode = "map" | "tree" | "sld";
+type TreeMode = "physical" | "electrical";
 
 const statusColor: Record<SitemapStatus, string> = {
   ONLINE: "rgba(120, 180, 140, 0.95)",
@@ -33,15 +38,24 @@ const statusColor: Record<SitemapStatus, string> = {
 
 export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   const model = useMemo(() => buildSitemapModel(twin), [twin]);
-  const tree = useMemo(() => buildSitemapTree(model), [model]);
+  const physicalTree = useMemo(() => buildSitemapTree(model), [model]);
+  const electricalTree = useMemo(
+    () => buildElectricalTree(model.assets),
+    [model.assets],
+  );
   const frameRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<ViewMode>("map");
+  const [treeMode, setTreeMode] = useState<TreeMode>("physical");
+  const [sldLevel, setSldLevel] = useState<SldLevel>("plant");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [hoveredKind, setHoveredKind] = useState<SitemapKind | null>(null);
   const [pointer, setPointer] = useState({ x: 24, y: 24 });
+  const [tracedPath, setTracedPath] = useState<ElectricalPath | null>(null);
   const { selectedAssetId, selectAsset } = useAssetSelection(twin.projectId);
   const counts = useMemo(() => countByKind(model.components), [model.components]);
   const plantName = model.plant.projectName || projectName;
+
+  const tree = treeMode === "electrical" ? electricalTree : physicalTree;
 
   const selectedNode: SitemapTreeNode | null = useMemo(() => {
     if (!selectedAssetId) return tree;
@@ -52,13 +66,14 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
     ? model.components.find((component) => component.id === hoveredId) ?? null
     : null;
 
+  const pathHighlight = useMemo(() => {
+    if (!tracedPath) return null;
+    return new Set(tracedPath.fullPath);
+  }, [tracedPath]);
+
   useEffect(() => {
-    if (!selectedAssetId) return;
-    // Expand tree context when selection arrives from 3D/search.
-    if (view === "map" && findTreeNodeByAssetId(tree, selectedAssetId)?.kind === "module") {
-      // keep map; modules may not be on map
-    }
-  }, [selectedAssetId, tree, view]);
+    setTracedPath(null);
+  }, [twin.id]);
 
   function handleHover(id: string | null) {
     setHoveredId(id);
@@ -115,7 +130,9 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
             onSelect={selectFromMap}
           />
         </div>
-      ) : (
+      ) : null}
+
+      {view === "tree" ? (
         <div className="absolute inset-0 pb-3 pt-14 pr-[min(252px,42%)] sm:pt-16">
           <SitemapTree
             root={tree}
@@ -124,7 +141,22 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
             onSelect={selectFromTree}
           />
         </div>
-      )}
+      ) : null}
+
+      {view === "sld" ? (
+        <div className="absolute inset-0 pb-3 pt-14 pr-[min(252px,42%)] sm:pt-16">
+          <SingleLineDiagram
+            model={model.assets}
+            selectedAssetId={selectedAssetId}
+            highlightedIds={pathHighlight}
+            level={sldLevel}
+            onLevelChange={setSldLevel}
+            onSelect={(assetId) =>
+              selectAsset(assetId, { source: "sitemap", focus3d: true })
+            }
+          />
+        </div>
+      ) : null}
 
       <div className="pointer-events-none absolute inset-0">
         <div className="pointer-events-none absolute left-3 top-3 max-w-[220px] sm:left-4 sm:top-4">
@@ -132,10 +164,18 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
             <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
               {view === "map" ? (
                 <Map className="h-3 w-3" />
+              ) : view === "sld" ? (
+                <Zap className="h-3 w-3" />
               ) : (
                 <FolderTree className="h-3 w-3" />
               )}
-              {view === "map" ? "Sitemap" : "Hierarchy"}
+              {view === "map"
+                ? "Sitemap"
+                : view === "sld"
+                  ? "SLD"
+                  : treeMode === "electrical"
+                    ? "Electrical"
+                    : "Hierarchy"}
             </p>
             <p className="mt-1 truncate text-sm font-semibold text-fg">
               {plantName}
@@ -143,9 +183,66 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
             <p className="mt-0.5 text-[11px] text-muted">
               {view === "map"
                 ? "Click a component to select its asset"
-                : "Expand folders · select a node for details"}
+                : view === "sld"
+                  ? "Data-driven single-line diagram"
+                  : "Expand folders · select a node for details"}
             </p>
           </div>
+          {view === "tree" ? (
+            <div className="pointer-events-auto mt-2 rounded-xl border border-edge-strong bg-page/90 p-0.5 backdrop-blur-sm">
+              <div className="flex" role="group" aria-label="Tree mode">
+                <button
+                  type="button"
+                  onClick={() => setTreeMode("physical")}
+                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-medium ${
+                    treeMode === "physical"
+                      ? "bg-fill-strong text-fg"
+                      : "text-muted hover:text-fg"
+                  }`}
+                >
+                  Physical
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTreeMode("electrical")}
+                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-medium ${
+                    treeMode === "electrical"
+                      ? "bg-fill-strong text-fg"
+                      : "text-muted hover:text-fg"
+                  }`}
+                >
+                  Electrical
+                </button>
+              </div>
+            </div>
+          ) : null}
+          {view === "map" && pathHighlight && selectedAssetId ? (
+            <div className="pointer-events-auto mt-2 max-h-40 overflow-y-auto rounded-xl border border-edge-strong bg-page/90 px-3 py-2 backdrop-blur-sm">
+              <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-accent">
+                Electrical path
+              </p>
+              <ol className="mt-1.5 space-y-0.5 text-[10px]">
+                {tracedPath?.fullPath.map((id, index) => (
+                  <li key={`${id}-${index}`} className="flex items-center gap-1">
+                    {index > 0 ? (
+                      <span className="text-muted">↓</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={`font-medium hover:text-accent ${
+                        id === selectedAssetId ? "text-accent" : "text-fg"
+                      }`}
+                      onClick={() =>
+                        selectAsset(id, { source: "sitemap", focus3d: true })
+                      }
+                    >
+                      {id}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
         </div>
 
         <div className="pointer-events-auto absolute right-3 top-3 flex w-[236px] flex-col items-stretch gap-2 sm:right-4 sm:top-4">
@@ -159,6 +256,8 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
                   ? selectedNode.assetId
                   : null
             }
+            tracedPath={tracedPath}
+            onTracePath={setTracedPath}
             onSelect={(assetId, options) =>
               selectAsset(assetId, {
                 source: "search",
@@ -172,6 +271,7 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
           <div className="pointer-events-auto absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4">
             <SldStrip
               modelCounts={counts}
+              electrical={model.assets.electrical}
               hoveredKind={hoveredKind}
               onHoverKind={(kind) => {
                 setHoveredId(null);
@@ -232,6 +332,19 @@ function ViewToggle({
       >
         <Network className="h-3.5 w-3.5" />
         Tree
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("sld")}
+        className={`inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors ${
+          view === "sld"
+            ? "bg-fill-strong text-fg"
+            : "text-muted hover:text-fg"
+        }`}
+        aria-pressed={view === "sld"}
+      >
+        <Zap className="h-3.5 w-3.5" />
+        SLD
       </button>
     </div>
   );
@@ -295,20 +408,28 @@ function HoverCard({
 
 function SldStrip({
   modelCounts,
+  electrical,
   hoveredKind,
   onHoverKind,
 }: {
   modelCounts: Partial<Record<SitemapKind, number>>;
+  electrical: ReturnType<typeof buildSitemapModel>["assets"]["electrical"];
   hoveredKind: SitemapKind | null;
   onHoverKind: (kind: SitemapKind | null) => void;
 }) {
   const stages = SLD_STAGES.filter((stage) => (modelCounts[stage.kind] ?? 0) > 0);
   return (
     <div className="rounded-xl border border-edge-strong bg-page/92 backdrop-blur-sm">
-      <div className="border-b border-edge px-3 py-2">
+      <div className="flex items-center justify-between border-b border-edge px-3 py-2">
         <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
           Power path
         </p>
+        {electrical ? (
+          <p className="text-[10px] text-muted">
+            {electrical.counts.strings.toLocaleString()} strings ·{" "}
+            {electrical.counts.feeders} feeders
+          </p>
+        ) : null}
       </div>
       <div
         className="flex items-stretch gap-0 overflow-x-auto px-1.5 py-1.5"

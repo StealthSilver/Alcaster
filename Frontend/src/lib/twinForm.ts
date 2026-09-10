@@ -78,6 +78,8 @@ export type TwinFormValues = {
   numberOfCells: string;
   moduleIdPrefix: string;
   moduleNumberingPattern: string;
+  /** Phase 3 — modules in series per string (optional; default from TwinSpec). */
+  modulesPerString: string;
 
   totalTables: string;
   modulesPerTable: string;
@@ -101,6 +103,8 @@ export type TwinFormValues = {
   blockLayoutFile: string;
   blockIdPrefix: string;
   blockNumberingPattern: string;
+  /** Phase 3 — strings feeding each combiner (optional). */
+  stringsPerCombiner: string;
 
   numberOfInverters: string;
   inverterManufacturer: string;
@@ -115,6 +119,8 @@ export type TwinFormValues = {
   invertersPerBlock: string;
   inverterIdPrefix: string;
   inverterNumberingPattern: string;
+  /** Phase 3 — inverters per transformer (optional). */
+  invertersPerTransformer: string;
 
   numberOfTransformers: string;
   transformerType: "" | "oil" | "dry" | "padmount" | "other";
@@ -129,6 +135,8 @@ export type TwinFormValues = {
   transformersPerBlock: string;
   transformerIdPrefix: string;
   transformerNumberingPattern: string;
+  /** Phase 3 — transformers per MV feeder (optional). */
+  transformersPerFeeder: string;
 
   substationPresent: "yes" | "no";
   numberOfSubstations: string;
@@ -136,6 +144,8 @@ export type TwinFormValues = {
   substationLatitude: string;
   substationLongitude: string;
   substationType: "" | "ais" | "gis" | "hybrid";
+  /** Phase 3 — number of MV feeders (optional; derived if empty). */
+  numberOfMvFeeders: string;
 
   internalRoadsPresent: "yes" | "no";
   mainAccessRoadPresent: "" | "yes" | "no";
@@ -525,6 +535,14 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
         type: "text",
         hint: "Optional. Default MOD-{number:03d}.",
       },
+      {
+        key: "modulesPerString",
+        label: "Modules per string",
+        type: "number",
+        min: 1,
+        step: "1",
+        hint: "Optional. Series modules per string. Default 28.",
+      },
     ],
   },
   {
@@ -669,6 +687,14 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
         type: "text",
         hint: "Optional. Default BLK-{number:03d}.",
       },
+      {
+        key: "stringsPerCombiner",
+        label: "Strings per combiner",
+        type: "number",
+        min: 1,
+        step: "1",
+        hint: "Optional. Default 16.",
+      },
     ],
   },
   {
@@ -733,6 +759,14 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
         label: "Inverter numbering pattern",
         type: "text",
         hint: "Optional. Default INV-{number:03d}.",
+      },
+      {
+        key: "invertersPerTransformer",
+        label: "Inverters per transformer",
+        type: "number",
+        min: 1,
+        step: "1",
+        hint: "Optional. Default 4.",
       },
     ],
   },
@@ -823,6 +857,14 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
         type: "text",
         hint: "Optional. Default TRF-{number:03d}.",
       },
+      {
+        key: "transformersPerFeeder",
+        label: "Transformers per MV feeder",
+        type: "number",
+        min: 1,
+        step: "1",
+        hint: "Optional. Default 2.",
+      },
     ],
   },
   {
@@ -882,6 +924,15 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
           { value: "gis", label: "GIS" },
           { value: "hybrid", label: "Hybrid" },
         ],
+      },
+      {
+        key: "numberOfMvFeeders",
+        label: "Number of MV feeders",
+        type: "number",
+        hidden: (values) => values.substationPresent === "no",
+        min: 1,
+        step: "1",
+        hint: "Optional. Derived from transformers if empty.",
       },
     ],
   },
@@ -1326,6 +1377,7 @@ export function defaultsFromProject(
     numberOfCells: "144",
     moduleIdPrefix: "MOD",
     moduleNumberingPattern: "MOD-{number:03d}",
+    modulesPerString: String(existing?.modulesPerString ?? 28),
 
     totalTables: String(totalTables),
     modulesPerTable: String(modulesPerTable),
@@ -1349,6 +1401,7 @@ export function defaultsFromProject(
     blockLayoutFile: "",
     blockIdPrefix: "BLK",
     blockNumberingPattern: "BLK-{number:03d}",
+    stringsPerCombiner: existing?.intake?.stringsPerCombiner ?? "16",
 
     numberOfInverters: String(inverters),
     inverterManufacturer: "",
@@ -1363,6 +1416,9 @@ export function defaultsFromProject(
     invertersPerBlock: String(Math.max(1, Math.ceil(inverters / blocks))),
     inverterIdPrefix: "INV",
     inverterNumberingPattern: "INV-{number:03d}",
+    invertersPerTransformer:
+      existing?.intake?.invertersPerTransformer ??
+      String(Math.max(1, Math.ceil(inverters / transformers))),
 
     numberOfTransformers: String(transformers),
     transformerType: "",
@@ -1377,6 +1433,7 @@ export function defaultsFromProject(
     transformersPerBlock: String(Math.max(1, Math.ceil(transformers / blocks))),
     transformerIdPrefix: "TRF",
     transformerNumberingPattern: "TRF-{number:03d}",
+    transformersPerFeeder: existing?.intake?.transformersPerFeeder ?? "2",
 
     substationPresent: "yes",
     numberOfSubstations: "1",
@@ -1384,6 +1441,9 @@ export function defaultsFromProject(
     substationLatitude: String(existing?.latitude ?? site?.latitude ?? ""),
     substationLongitude: String(existing?.longitude ?? site?.longitude ?? ""),
     substationType: "ais",
+    numberOfMvFeeders:
+      existing?.intake?.numberOfMvFeeders ??
+      String(Math.max(1, Math.ceil(transformers / 2))),
 
     internalRoadsPresent: existing?.includeRoads === false ? "no" : "yes",
     mainAccessRoadPresent: "yes",
@@ -1533,7 +1593,10 @@ export function toTwinPayload(values: TwinFormValues): TwinSpec {
     azimuthDeg: Number(values.azimuthDeg),
     mountingType: mapMounting(values.mountingKind),
     groundCoverageRatio: 0.4,
-    modulesPerString: 28,
+    modulesPerString: Math.max(
+      1,
+      Math.round(Number(values.modulesPerString) || 28),
+    ),
     inverterType: mapInverterKind(values.inverterKind),
     inverterRatingKw: Math.min(5000, inverterRating),
     transformerMva: Math.max(10, Math.round(capacity * 1.1)),

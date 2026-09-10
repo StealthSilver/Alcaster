@@ -1,10 +1,11 @@
-import { Component, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { Box } from "lucide-react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Box, Zap } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { useAssetSelection } from "@/hooks/useAssetSelection";
 import type { TwinRecord } from "@/lib/api";
-import { buildAssetModel } from "@/lib/assetModel";
+import type { ElectricalPath } from "@/lib/electricalModel";
+import { buildPlantTwinModel } from "@/lib/plantTwin";
 
 import { AssetDetailsPanel } from "./AssetDetailsPanel";
 import { TwinCanvas } from "./TwinCanvas";
@@ -44,12 +45,14 @@ type TwinViewerProps = {
 export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   const { spec, derived } = twin;
   const intake = spec.intake;
-  const assets = useMemo(() => buildAssetModel(twin), [twin]);
+  const assets = useMemo(() => buildPlantTwinModel(twin), [twin]);
   const { selectedAssetId, selectAsset, focusToken } = useAssetSelection(
     twin.projectId,
   );
   const [searchParams, setSearchParams] = useSearchParams();
   const hydratedUrl = useRef(false);
+  const [electricalMode, setElectricalMode] = useState(false);
+  const [tracedPath, setTracedPath] = useState<ElectricalPath | null>(null);
 
   useEffect(() => {
     if (hydratedUrl.current) return;
@@ -67,6 +70,17 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
     }
   }, [assets.assets, searchParams, selectAsset, setSearchParams]);
 
+  useEffect(() => {
+    setTracedPath(null);
+  }, [twin.id]);
+
+  const highlightedAssetIds = useMemo(() => {
+    if (!tracedPath) return null;
+    return new Set(tracedPath.fullPath);
+  }, [tracedPath]);
+
+  const electrical = assets.electrical;
+
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-edge bg-page">
       <div className="absolute inset-0 [&_canvas]:!h-full [&_canvas]:!w-full">
@@ -76,6 +90,8 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
             assets={assets}
             selectedAssetId={selectedAssetId}
             focusToken={focusToken}
+            highlightedAssetIds={highlightedAssetIds}
+            electricalMode={electricalMode}
             onSelectAsset={(assetId) =>
               selectAsset(assetId, { source: "3d", focus3d: false })
             }
@@ -119,10 +135,41 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
                 value={assets.counts.modules.toLocaleString()}
               />
               <Row
+                label="Strings"
+                value={(electrical?.counts.strings ?? assets.counts.strings).toLocaleString()}
+              />
+              <Row
                 label="Inverters"
                 value={String(assets.counts.inverters)}
               />
             </dl>
+          </div>
+          <div className="rounded-xl border border-edge-strong bg-page/90 p-0.5 backdrop-blur-sm">
+            <div className="flex" role="group" aria-label="View mode">
+              <button
+                type="button"
+                onClick={() => setElectricalMode(false)}
+                className={`flex-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium ${
+                  !electricalMode
+                    ? "bg-fill-strong text-fg"
+                    : "text-muted hover:text-fg"
+                }`}
+              >
+                Physical
+              </button>
+              <button
+                type="button"
+                onClick={() => setElectricalMode(true)}
+                className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium ${
+                  electricalMode
+                    ? "bg-fill-strong text-fg"
+                    : "text-muted hover:text-fg"
+                }`}
+              >
+                <Zap className="h-3 w-3" />
+                Electrical
+              </button>
+            </div>
           </div>
         </div>
 
@@ -130,6 +177,8 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
           <AssetDetailsPanel
             model={assets}
             selectedAssetId={selectedAssetId}
+            tracedPath={tracedPath}
+            onTracePath={setTracedPath}
             onSelect={(assetId, options) =>
               selectAsset(assetId, {
                 source: "search",
@@ -141,6 +190,7 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
 
         <p className="absolute bottom-3 left-3 text-[11px] text-muted sm:bottom-4 sm:left-4">
           Click an asset · drag to orbit · scroll to zoom
+          {electricalMode ? " · electrical connections visible" : ""}
         </p>
       </div>
     </div>

@@ -51,6 +51,9 @@ function kindIcon(kind: SitemapTreeKind) {
       return LayoutGrid;
     case "module":
       return PanelTop;
+    case "string":
+    case "feeder":
+      return Cable;
     case "combiner":
       return Cable;
     case "inverter":

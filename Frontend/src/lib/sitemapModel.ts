@@ -2,12 +2,12 @@ import type { TwinRecord } from "@/lib/api";
 import {
   assetDetailRows,
   assetTypeLabel,
-  buildAssetModelFromLayout,
   statusToSitemap,
   type Asset,
   type AssetModel,
   type AssetType,
 } from "@/lib/assetModel";
+import { buildPlantTwinModel } from "@/lib/plantTwin";
 import {
   buildTwinLayout,
   type TwinLayout,
@@ -201,8 +201,10 @@ function rowsFromAsset(asset: Asset, model: AssetModel, extra: InfoRow[] = []): 
 }
 
 export function buildSitemapModel(twin: TwinRecord): SitemapModel {
-  const layout = buildTwinLayout(twin.spec, twin.derived);
-  const assets = buildAssetModelFromLayout(twin, layout);
+  const { layout, assets } = (() => {
+    const resolved = buildTwinLayout(twin.spec, twin.derived);
+    return { layout: resolved, assets: buildPlantTwinModel(twin, resolved) };
+  })();
   const plant = layout.plant;
   const seed = twin.id;
   const irradiance = round(mix(780, 980, `${seed}:ghi`));
@@ -223,8 +225,11 @@ export function buildSitemapModel(twin: TwinRecord): SitemapModel {
         { label: "Blocks", value: String(assets.counts.blocks) },
         { label: "Tables", value: assets.counts.tables.toLocaleString() },
         { label: "Modules", value: assets.counts.modules.toLocaleString() },
+        { label: "Strings", value: assets.counts.strings.toLocaleString() },
+        { label: "Combiners", value: String(assets.counts.combiners) },
         { label: "Inverters", value: String(assets.counts.inverters) },
         { label: "Transformers", value: String(assets.counts.transformers) },
+        { label: "MV feeders", value: String(assets.counts.feeders) },
         { label: "Export", value: `${exportMw} MW` },
         { label: "Plant load", value: `${plantLoadPct}%` },
         { label: "GHI", value: `${irradiance} W/m²` },
@@ -496,6 +501,8 @@ export type SitemapTreeKind =
   | "block"
   | "folder"
   | "module"
+  | "string"
+  | "feeder"
   | SitemapKind;
 
 export type SitemapTreeNode = {
@@ -540,6 +547,8 @@ function treeKindFromAsset(type: AssetType): SitemapTreeKind {
   if (type === "PLANT") return "plant";
   if (type === "BLOCK") return "block";
   if (type === "MODULE") return "module";
+  if (type === "STRING") return "string";
+  if (type === "FEEDER") return "feeder";
   return assetKind(type) ?? "folder";
 }
 
@@ -607,6 +616,50 @@ export function buildSitemapTree(model: SitemapModel): SitemapTreeNode {
       }));
   }
 
+  /** Group large string lists so the physical tree stays usable. */
+  function stringFolder(): SitemapTreeNode | null {
+    const ids = Object.values(assets.assets)
+      .filter((asset) => asset.assetType === "STRING")
+      .sort((a, b) => a.assetId.localeCompare(b.assetId));
+    if (ids.length === 0) return null;
+    const GROUP = 100;
+    if (ids.length <= GROUP) {
+      return folder(
+        "strings",
+        "Strings",
+        ids.map((asset) => ({
+          id: asset.assetId,
+          label: asset.assetId,
+          kind: "string" as const,
+          ...fromAsset(asset, assets, lookup),
+        })),
+      );
+    }
+    const groups: SitemapTreeNode[] = [];
+    for (let i = 0; i < ids.length; i += GROUP) {
+      const slice = ids.slice(i, i + GROUP);
+      groups.push({
+        id: `strings-${i}`,
+        label: `${slice[0]!.assetId} – ${slice[slice.length - 1]!.assetId}`,
+        kind: "folder",
+        typeLabel: "String group",
+        count: slice.length,
+        rows: [
+          { label: "From", value: slice[0]!.assetId },
+          { label: "To", value: slice[slice.length - 1]!.assetId },
+          { label: "Count", value: String(slice.length) },
+        ],
+        children: slice.map((asset) => ({
+          id: asset.assetId,
+          label: asset.assetId,
+          kind: "string" as const,
+          ...fromAsset(asset, assets, lookup),
+        })),
+      });
+    }
+    return folder("strings", "Strings", groups);
+  }
+
   const topChildren: SitemapTreeNode[] = [
     {
       id: "blocks",
@@ -624,9 +677,11 @@ export function buildSitemapTree(model: SitemapModel): SitemapTreeNode {
   ];
 
   for (const node of [
+    stringFolder(),
     folder("combiners", "Combiners", leaves(["COMBINER"])),
     folder("inverters", "Inverters", leaves(["INVERTER"])),
     folder("transformers", "Transformers", leaves(["TRANSFORMER"])),
+    folder("feeders", "MV Feeders", leaves(["FEEDER"])),
     folder(
       "substations",
       "Substation",
