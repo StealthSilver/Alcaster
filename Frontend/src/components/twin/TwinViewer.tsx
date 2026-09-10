@@ -1,10 +1,12 @@
-import { Component, type ReactNode } from "react";
-import { Box, Map, RotateCcw } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Component, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { Box } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
+import { useAssetSelection } from "@/hooks/useAssetSelection";
 import type { TwinRecord } from "@/lib/api";
-import { projectSitemapPath } from "@/lib/paths";
+import { buildAssetModel } from "@/lib/assetModel";
 
+import { AssetDetailsPanel } from "./AssetDetailsPanel";
 import { TwinCanvas } from "./TwinCanvas";
 
 class TwinErrorBoundary extends Component<
@@ -37,17 +39,47 @@ class TwinErrorBoundary extends Component<
 type TwinViewerProps = {
   twin: TwinRecord;
   projectName: string;
-  onRebuild: () => void;
 };
 
-export function TwinViewer({ twin, projectName, onRebuild }: TwinViewerProps) {
+export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   const { spec, derived } = twin;
+  const intake = spec.intake;
+  const assets = useMemo(() => buildAssetModel(twin), [twin]);
+  const { selectedAssetId, selectAsset, focusToken } = useAssetSelection(
+    twin.projectId,
+  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hydratedUrl = useRef(false);
+
+  useEffect(() => {
+    if (hydratedUrl.current) return;
+    const fromUrl = searchParams.get("asset");
+    if (!fromUrl) {
+      hydratedUrl.current = true;
+      return;
+    }
+    if (assets.assets[fromUrl]) {
+      selectAsset(fromUrl, { source: "external", focus3d: true });
+      hydratedUrl.current = true;
+      const next = new URLSearchParams(searchParams);
+      next.delete("asset");
+      setSearchParams(next, { replace: true });
+    }
+  }, [assets.assets, searchParams, selectAsset, setSearchParams]);
 
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-edge bg-page">
       <div className="absolute inset-0 [&_canvas]:!h-full [&_canvas]:!w-full">
         <TwinErrorBoundary>
-          <TwinCanvas twin={twin} />
+          <TwinCanvas
+            twin={twin}
+            assets={assets}
+            selectedAssetId={selectedAssetId}
+            focusToken={focusToken}
+            onSelectAsset={(assetId) =>
+              selectAsset(assetId, { source: "3d", focus3d: false })
+            }
+          />
         </TwinErrorBoundary>
       </div>
 
@@ -62,41 +94,53 @@ export function TwinViewer({ twin, projectName, onRebuild }: TwinViewerProps) {
               {projectName}
             </p>
             <p className="mt-0.5 text-[11px] text-muted">
-              {spec.mountingType === "single_axis" ? "Single-axis" : "Fixed tilt"}{" "}
-              · {spec.moduleWattageW} W
+              {intake?.mountingKind === "dual_axis"
+                ? "Dual-axis"
+                : intake?.mountingKind === "fixed_tilt" ||
+                    spec.mountingType === "fixed_tilt"
+                  ? "Fixed tilt"
+                  : "Single-axis"}{" "}
+              · {intake?.moduleRatedPowerW || spec.moduleWattageW} W
             </p>
           </div>
           <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
             <dl className="space-y-1.5 text-[11px]">
-              <Row label="AC / DC" value={`${spec.capacityMw} / ${derived.dcCapacityMwp} MW`} />
-              <Row label="Land" value={`${spec.landAreaAcres} acres`} />
-              <Row label="Modules" value={derived.moduleCount.toLocaleString()} />
-              <Row label="Inverters" value={String(derived.inverterCount)} />
-              <Row label="Grid" value={`${spec.gridVoltageKv} kV`} />
+              <Row
+                label="AC / DC"
+                value={`${intake?.plantAcCapacity || spec.capacityMw} / ${intake?.plantDcCapacity || derived.dcCapacityMwp} MW`}
+              />
+              <Row label="Blocks" value={String(assets.counts.blocks)} />
+              <Row
+                label="Tables"
+                value={assets.counts.tables.toLocaleString()}
+              />
+              <Row
+                label="Modules"
+                value={assets.counts.modules.toLocaleString()}
+              />
+              <Row
+                label="Inverters"
+                value={String(assets.counts.inverters)}
+              />
             </dl>
           </div>
         </div>
 
-        <div className="pointer-events-auto absolute right-3 top-3 flex flex-col items-end gap-2 sm:right-4 sm:top-4">
-          <Link
-            to={projectSitemapPath(twin.projectId)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-edge-strong bg-page/90 px-3 py-2 text-xs font-medium text-secondary backdrop-blur-sm transition-colors hover:border-edge-strong hover:text-fg"
-          >
-            <Map className="h-3.5 w-3.5" />
-            Sitemap
-          </Link>
-          <button
-            type="button"
-            onClick={onRebuild}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-edge-strong bg-page/90 px-3 py-2 text-xs font-medium text-secondary backdrop-blur-sm transition-colors hover:border-edge-strong hover:text-fg"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Edit inputs
-          </button>
+        <div className="pointer-events-auto absolute right-3 top-3 sm:right-4 sm:top-4">
+          <AssetDetailsPanel
+            model={assets}
+            selectedAssetId={selectedAssetId}
+            onSelect={(assetId, options) =>
+              selectAsset(assetId, {
+                source: "search",
+                focus3d: options?.focus3d ?? Boolean(assetId),
+              })
+            }
+          />
         </div>
 
         <p className="absolute bottom-3 left-3 text-[11px] text-muted sm:bottom-4 sm:left-4">
-          Drag to orbit · scroll to zoom · dummy spatial model
+          Click an asset · drag to orbit · scroll to zoom
         </p>
       </div>
     </div>

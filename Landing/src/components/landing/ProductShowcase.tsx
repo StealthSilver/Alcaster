@@ -32,14 +32,6 @@ export function ProductShowcase() {
 
   return (
     <section className="relative py-20 sm:py-28">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 40% at 50% 20%, rgba(230,116,10,0.06), transparent 70%)",
-        }}
-      />
-
       <Container className="relative">
         <div className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeading

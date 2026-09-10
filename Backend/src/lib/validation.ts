@@ -1,6 +1,22 @@
 import { z, type ZodType } from "zod";
 
+import { ACCESS_ROLES, GENDERS } from "../types.js";
+import { isAdmin } from "./roles.js";
 import { HttpError } from "../errors.js";
+
+export const TEAM_PASSWORD_HINT =
+  "Password must be 4–15 characters and include uppercase, lowercase, a number, and a special character.";
+
+function isTeamPassword(value: string) {
+  return (
+    value.length >= 4 &&
+    value.length <= 15 &&
+    /[A-Z]/.test(value) &&
+    /[a-z]/.test(value) &&
+    /\d/.test(value) &&
+    /[^A-Za-z0-9]/.test(value)
+  );
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +50,9 @@ export const requestAccessSchema = z.object({
     .min(1, "Company is required.")
     .min(2, "Enter your company name.")
     .max(100, "Company name is too long."),
+  role: z.enum(ACCESS_ROLES, {
+    error: "Select a role.",
+  }),
   message: z
     .string({ error: "Message is required." })
     .trim()
@@ -86,37 +105,41 @@ export const deleteAccountSchema = z.object({
     .max(128, "Password is too long."),
 });
 
-export const createSiteSchema = z.object({
+const siteFieldsSchema = z.object({
   name: z
     .string({ error: "Site name is required." })
     .trim()
     .min(1, "Site name is required.")
     .min(2, "Enter a site name.")
-    .max(80, "Site name is too long."),
-  location: z
-    .string({ error: "Location is required." })
+    .max(160, "Site name is too long."),
+  address: z
+    .string({ error: "Address is required." })
     .trim()
-    .min(1, "Location is required.")
-    .min(2, "Enter a location.")
-    .max(80, "Location is too long."),
+    .min(1, "Address is required.")
+    .min(2, "Enter an address.")
+    .max(300, "Address is too long."),
+  latitude: z.coerce
+    .number({ error: "Latitude is required." })
+    .min(-90, "Enter a valid latitude.")
+    .max(90, "Enter a valid latitude."),
+  longitude: z.coerce
+    .number({ error: "Longitude is required." })
+    .min(-180, "Enter a valid longitude.")
+    .max(180, "Enter a valid longitude."),
+  type: z.enum(["solar", "wind", "bess", "hybrid"], {
+    error: "Select a site type.",
+  }),
   status: z
-    .enum(["active", "pending", "on_hold"], {
+    .enum(["active", "inactive"], {
       error: "Select a site status.",
     })
     .default("active"),
-  description: z
-    .string()
-    .trim()
-    .max(2000, "Description is too long.")
-    .optional()
-    .transform((value) => value ?? ""),
 });
 
-export const createProjectSchema = z.object({
-  siteId: z
-    .string({ error: "Select a site." })
-    .trim()
-    .min(1, "Select a site."),
+export const createSiteSchema = siteFieldsSchema;
+export const updateSiteSchema = siteFieldsSchema;
+
+const projectFieldsSchema = z.object({
   name: z
     .string({ error: "Project name is required." })
     .trim()
@@ -148,6 +171,95 @@ export const createProjectSchema = z.object({
     .optional()
     .transform((value) => value ?? ""),
 });
+
+export const createProjectSchema = projectFieldsSchema.extend({
+  siteId: z
+    .string({ error: "Select a site." })
+    .trim()
+    .min(1, "Select a site."),
+});
+
+export const updateProjectSchema = projectFieldsSchema;
+
+const teamMemberFieldsSchema = z.object({
+  name: z
+    .string({ error: "Name is required." })
+    .trim()
+    .min(1, "Name is required.")
+    .min(2, "Enter a name.")
+    .max(80, "Name is too long."),
+  email: emailSchema,
+  role: z.enum(ACCESS_ROLES, {
+    error: "Select a role.",
+  }),
+  gender: z.enum(GENDERS, {
+    error: "Select a gender.",
+  }),
+  designation: z
+    .string({ error: "Designation is required." })
+    .trim()
+    .min(1, "Designation is required.")
+    .min(2, "Enter a designation.")
+    .max(80, "Designation is too long."),
+  company: z
+    .string()
+    .trim()
+    .max(100, "Organization name is too long.")
+    .optional()
+    .transform((value) => value ?? ""),
+  siteIds: z
+    .array(z.string().trim().min(1, "Select a valid site."))
+    .default([]),
+});
+
+export const createTeamMemberSchema = teamMemberFieldsSchema
+  .extend({
+    password: z
+      .string({ error: "Password is required." })
+      .min(1, "Password is required.")
+      .max(15, TEAM_PASSWORD_HINT)
+      .refine(isTeamPassword, TEAM_PASSWORD_HINT),
+  })
+  .superRefine((data, ctx) => {
+    if (!isAdmin(data.role) && data.siteIds.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["siteIds"],
+        message: "Assign at least one site.",
+      });
+    }
+  });
+
+const managedRoleSchema = z
+  .string({ error: "Select a role." })
+  .trim()
+  .min(1, "Select a role.")
+  .refine(
+    (value) =>
+      (ACCESS_ROLES as readonly string[]).includes(value) || isAdmin(value),
+    "Select a role.",
+  );
+
+export const updateTeamMemberSchema = teamMemberFieldsSchema
+  .omit({ role: true })
+  .extend({
+    role: managedRoleSchema,
+    password: z
+      .string()
+      .max(15, TEAM_PASSWORD_HINT)
+      .optional()
+      .transform((value) => value?.trim() ?? "")
+      .refine((value) => !value || isTeamPassword(value), TEAM_PASSWORD_HINT),
+  })
+  .superRefine((data, ctx) => {
+    if (!isAdmin(data.role) && data.siteIds.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["siteIds"],
+        message: "Assign at least one site.",
+      });
+    }
+  });
 
 export const createTwinSchema = z.object({
   capacityMw: z.coerce
@@ -224,6 +336,7 @@ export const createTwinSchema = z.object({
   includeWeatherStation: z.boolean().default(true),
   includeFence: z.boolean().default(true),
   includeRoads: z.boolean().default(true),
+  intake: z.record(z.string(), z.string()).optional(),
 });
 
 export function parseBody<T>(schema: ZodType<T>, body: unknown): T {

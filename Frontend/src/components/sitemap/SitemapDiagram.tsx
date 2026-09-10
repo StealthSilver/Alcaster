@@ -7,7 +7,9 @@ type SitemapDiagramProps = {
   model: SitemapModel;
   hoveredId: string | null;
   hoveredKind: SitemapKind | null;
+  selectedId?: string | null;
   onHover: (id: string | null) => void;
+  onSelect?: (id: string) => void;
 };
 
 type ViewBox = {
@@ -70,10 +72,34 @@ function isActive(
   component: SitemapComponent,
   hoveredId: string | null,
   hoveredKind: SitemapKind | null,
+  selectedId?: string | null,
 ) {
+  if (selectedId && component.id === selectedId) return true;
   if (hoveredId) return component.id === hoveredId;
   if (hoveredKind) return component.kind === hoveredKind;
   return false;
+}
+
+function displaySize(component: SitemapComponent, view: ViewBox) {
+  if (component.kind === "road" || component.kind === "fence") {
+    return component;
+  }
+  const min =
+    component.kind === "table"
+      ? Math.max(10, view.height * 0.014)
+      : component.kind === "substation" || component.kind === "grid"
+        ? Math.max(48, view.width * 0.05)
+        : component.kind === "combiner"
+          ? Math.max(10, view.width * 0.01)
+          : Math.max(28, view.width * 0.022);
+  return {
+    ...component,
+    w: component.kind === "table" ? component.w : Math.max(component.w, min),
+    d:
+      component.kind === "table"
+        ? Math.max(component.d, min)
+        : Math.max(component.d, min * 0.7),
+  };
 }
 
 function strokeFor(component: SitemapComponent, active: boolean) {
@@ -87,15 +113,22 @@ export function SitemapDiagram({
   model,
   hoveredId,
   hoveredKind,
+  selectedId = null,
   onHover,
+  onSelect,
 }: SitemapDiagramProps) {
   const rawId = useId();
   const uid = rawId.replace(/:/g, "");
   const view = useMemo(() => viewBoxOf(model), [model]);
   const { layout, components } = model;
-  const dimmed = Boolean(hoveredId || hoveredKind);
+  const dimmed = Boolean(hoveredId || hoveredKind || selectedId);
   const byKind = (kind: SitemapKind) =>
-    components.filter((component) => component.kind === kind);
+    components
+      .filter((component) => component.kind === kind)
+      .map((component) => displaySize(component, view));
+
+  const activeOf = (component: SitemapComponent) =>
+    isActive(component, hoveredId, hoveredKind, selectedId);
 
   return (
     <svg
@@ -130,39 +163,29 @@ export function SitemapDiagram({
         );
       })()}
 
-      {layout.spec.includeRoads
-        ? layout.roads.map((road, index) => {
-            const { sx, sy } = toSvg(road.x, road.z, view);
-            return (
-              <rect
-                key={`road-${index}`}
-                x={sx - road.w / 2}
-                y={sy - road.d / 2}
-                width={road.w}
-                height={road.d}
-                fill="color-mix(in srgb, var(--alcaster-fg) 5%, transparent)"
-              />
-            );
-          })
-        : null}
+      {byKind("road").map((component) => (
+        <RoadSymbol
+          key={component.id}
+          component={component}
+          view={view}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
+          onHover={onHover}
+          onSelect={onSelect}
+        />
+      ))}
 
-      {layout.spec.includeFence
-        ? (() => {
-            const a = toSvg(-layout.width / 2, -layout.depth / 2, view);
-            return (
-              <rect
-                x={a.sx}
-                y={a.sy}
-                width={layout.width}
-                height={layout.depth}
-                fill="none"
-                stroke="rgba(180,190,170,0.28)"
-                strokeWidth={0.22}
-                strokeDasharray="1.2 0.8"
-              />
-            );
-          })()
-        : null}
+      {byKind("fence").map((component) => (
+        <FenceSymbol
+          key={component.id}
+          component={component}
+          view={view}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
+          onHover={onHover}
+          onSelect={onSelect}
+        />
+      ))}
 
       <CableLayer
         paths={layout.dcStrings}
@@ -197,21 +220,24 @@ export function SitemapDiagram({
         z={-layout.depth / 2 + 6}
         text="ARRAY FIELD"
       />
-      <ZoneLabel
-        view={view}
-        x={-8}
-        z={layout.depth / 2 - layout.depth * 0.12}
-        text="SWITCHYARD"
-      />
+      {layout.plant.substationPresent ? (
+        <ZoneLabel
+          view={view}
+          x={-8}
+          z={layout.depth / 2 - layout.depth * 0.12}
+          text="SWITCHYARD"
+        />
+      ) : null}
 
       {byKind("table").map((component) => (
         <TableSymbol
           key={component.id}
           component={component}
           view={view}
-          active={isActive(component, hoveredId, hoveredKind)}
-          dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
           onHover={onHover}
+          onSelect={onSelect}
         />
       ))}
       {byKind("combiner").map((component) => (
@@ -219,9 +245,10 @@ export function SitemapDiagram({
           key={component.id}
           component={component}
           view={view}
-          active={isActive(component, hoveredId, hoveredKind)}
-          dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
           onHover={onHover}
+          onSelect={onSelect}
           fill="var(--alcaster-diagram-equipment-alt)"
         />
       ))}
@@ -230,9 +257,10 @@ export function SitemapDiagram({
           key={component.id}
           component={component}
           view={view}
-          active={isActive(component, hoveredId, hoveredKind)}
-          dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
           onHover={onHover}
+          onSelect={onSelect}
         />
       ))}
       {byKind("transformer").map((component) => (
@@ -240,9 +268,10 @@ export function SitemapDiagram({
           key={component.id}
           component={component}
           view={view}
-          active={isActive(component, hoveredId, hoveredKind)}
-          dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
           onHover={onHover}
+          onSelect={onSelect}
         />
       ))}
       {byKind("substation").map((component) => (
@@ -250,9 +279,10 @@ export function SitemapDiagram({
           key={component.id}
           component={component}
           view={view}
-          active={isActive(component, hoveredId, hoveredKind)}
-          dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
           onHover={onHover}
+          onSelect={onSelect}
         />
       ))}
       {byKind("grid").map((component) => (
@@ -260,9 +290,10 @@ export function SitemapDiagram({
           key={component.id}
           component={component}
           view={view}
-          active={isActive(component, hoveredId, hoveredKind)}
-          dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
           onHover={onHover}
+          onSelect={onSelect}
         />
       ))}
       {byKind("building").map((component) => (
@@ -270,9 +301,10 @@ export function SitemapDiagram({
           key={component.id}
           component={component}
           view={view}
-          active={isActive(component, hoveredId, hoveredKind)}
-          dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
           onHover={onHover}
+          onSelect={onSelect}
         />
       ))}
       {byKind("weather").map((component) => (
@@ -280,9 +312,21 @@ export function SitemapDiagram({
           key={component.id}
           component={component}
           view={view}
-          active={isActive(component, hoveredId, hoveredKind)}
-          dimmed={dimmed && !isActive(component, hoveredId, hoveredKind)}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
           onHover={onHover}
+          onSelect={onSelect}
+        />
+      ))}
+      {byKind("gate").map((component) => (
+        <GateSymbol
+          key={component.id}
+          component={component}
+          view={view}
+          active={activeOf(component)}
+          dimmed={dimmed && !activeOf(component)}
+          onHover={onHover}
+          onSelect={onSelect}
         />
       ))}
 
@@ -362,16 +406,25 @@ type SymbolProps = {
   active: boolean;
   dimmed: boolean;
   onHover: (id: string | null) => void;
+  onSelect?: (id: string) => void;
 };
 
-function hitHandlers(id: string, onHover: (id: string | null) => void) {
+function hitHandlers(
+  id: string,
+  onHover: (id: string | null) => void,
+  onSelect?: (id: string) => void,
+) {
   return {
     onMouseEnter: () => onHover(id),
     onMouseLeave: () => onHover(null),
+    onClick: (event: { stopPropagation: () => void }) => {
+      event.stopPropagation();
+      onSelect?.(id);
+    },
   };
 }
 
-function TableSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
+function TableSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
   const { sx, sy } = toSvg(component.x, component.z, view);
   const yaw = (component.rotY * 180) / Math.PI;
   const stroke = strokeFor(component, active);
@@ -380,7 +433,7 @@ function TableSymbol({ component, view, active, dimmed, onHover }: SymbolProps) 
       transform={`translate(${sx} ${sy}) rotate(${yaw})`}
       opacity={dimmed ? 0.28 : 1}
       className="cursor-pointer"
-      {...hitHandlers(component.id, onHover)}
+      {...hitHandlers(component.id, onHover, onSelect)}
     >
       <rect
         x={-component.w / 2}
@@ -391,7 +444,7 @@ function TableSymbol({ component, view, active, dimmed, onHover }: SymbolProps) 
         fill={
           active
             ? "var(--alcaster-diagram-module-active)"
-            : "var(--alcaster-diagram-module)"
+            : "color-mix(in srgb, var(--alcaster-diagram-module) 88%, #4d8ec8)"
         }
         stroke={stroke}
         strokeWidth={active ? 0.18 : 0.08}
@@ -414,6 +467,7 @@ function BoxSymbol({
   active,
   dimmed,
   onHover,
+  onSelect,
   fill,
 }: SymbolProps & { fill: string }) {
   const { sx, sy } = toSvg(component.x, component.z, view);
@@ -422,7 +476,7 @@ function BoxSymbol({
       transform={`translate(${sx} ${sy})`}
       opacity={dimmed ? 0.28 : 1}
       className="cursor-pointer"
-      {...hitHandlers(component.id, onHover)}
+      {...hitHandlers(component.id, onHover, onSelect)}
     >
       <rect
         x={-component.w / 2}
@@ -438,7 +492,7 @@ function BoxSymbol({
   );
 }
 
-function InverterSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
+function InverterSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
   const { sx, sy } = toSvg(component.x, component.z, view);
   const stroke = strokeFor(component, active);
   return (
@@ -446,7 +500,7 @@ function InverterSymbol({ component, view, active, dimmed, onHover }: SymbolProp
       transform={`translate(${sx} ${sy})`}
       opacity={dimmed ? 0.28 : 1}
       className="cursor-pointer"
-      {...hitHandlers(component.id, onHover)}
+      {...hitHandlers(component.id, onHover, onSelect)}
     >
       <rect
         x={-component.w / 2}
@@ -493,7 +547,7 @@ function InverterSymbol({ component, view, active, dimmed, onHover }: SymbolProp
   );
 }
 
-function TransformerSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
+function TransformerSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
   const { sx, sy } = toSvg(component.x, component.z, view);
   const stroke = strokeFor(component, active);
   return (
@@ -501,7 +555,7 @@ function TransformerSymbol({ component, view, active, dimmed, onHover }: SymbolP
       transform={`translate(${sx} ${sy})`}
       opacity={dimmed ? 0.28 : 1}
       className="cursor-pointer"
-      {...hitHandlers(component.id, onHover)}
+      {...hitHandlers(component.id, onHover, onSelect)}
     >
       <rect
         x={-component.w / 2}
@@ -525,7 +579,7 @@ function TransformerSymbol({ component, view, active, dimmed, onHover }: SymbolP
   );
 }
 
-function SubstationSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
+function SubstationSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
   const { sx, sy } = toSvg(component.x, component.z, view);
   const stroke = strokeFor(component, active);
   return (
@@ -533,7 +587,7 @@ function SubstationSymbol({ component, view, active, dimmed, onHover }: SymbolPr
       transform={`translate(${sx} ${sy})`}
       opacity={dimmed ? 0.28 : 1}
       className="cursor-pointer"
-      {...hitHandlers(component.id, onHover)}
+      {...hitHandlers(component.id, onHover, onSelect)}
     >
       <rect
         x={-component.w / 2}
@@ -585,7 +639,7 @@ function SubstationSymbol({ component, view, active, dimmed, onHover }: SymbolPr
   );
 }
 
-function GridSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
+function GridSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
   const { sx, sy } = toSvg(component.x, component.z, view);
   const stroke = strokeFor(component, active);
   return (
@@ -593,7 +647,7 @@ function GridSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
       transform={`translate(${sx} ${sy})`}
       opacity={dimmed ? 0.28 : 1}
       className="cursor-pointer"
-      {...hitHandlers(component.id, onHover)}
+      {...hitHandlers(component.id, onHover, onSelect)}
     >
       <circle r={2.35} fill="var(--alcaster-diagram-equipment)" stroke={stroke} strokeWidth={0.18} />
       <path
@@ -617,14 +671,14 @@ function GridSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
   );
 }
 
-function BuildingSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
+function BuildingSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
   const { sx, sy } = toSvg(component.x, component.z, view);
   return (
     <g
       transform={`translate(${sx} ${sy})`}
       opacity={dimmed ? 0.28 : 1}
       className="cursor-pointer"
-      {...hitHandlers(component.id, onHover)}
+      {...hitHandlers(component.id, onHover, onSelect)}
     >
       <rect
         x={-component.w / 2}
@@ -654,7 +708,104 @@ function BuildingSymbol({ component, view, active, dimmed, onHover }: SymbolProp
   );
 }
 
-function WeatherSymbol({ component, view, active, dimmed, onHover }: SymbolProps) {
+function RoadSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
+  const { sx, sy } = toSvg(component.x, component.z, view);
+  return (
+    <g
+      transform={`translate(${sx} ${sy})`}
+      opacity={dimmed ? 0.22 : 1}
+      className="cursor-pointer"
+      {...hitHandlers(component.id, onHover, onSelect)}
+    >
+      <rect
+        x={-component.w / 2}
+        y={-component.d / 2}
+        width={component.w}
+        height={component.d}
+        fill={
+          active
+            ? "color-mix(in srgb, var(--alcaster-fg) 14%, transparent)"
+            : "color-mix(in srgb, var(--alcaster-fg) 6%, transparent)"
+        }
+        stroke={active ? "rgba(230,116,10,0.55)" : "transparent"}
+        strokeWidth={active ? 0.16 : 0}
+      />
+    </g>
+  );
+}
+
+function FenceSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
+  const { sx, sy } = toSvg(component.x, component.z, view);
+  const stroke = active ? "#e6740a" : "rgba(180,190,170,0.34)";
+  return (
+    <g
+      transform={`translate(${sx} ${sy})`}
+      opacity={dimmed ? 0.35 : 1}
+      className="cursor-pointer"
+      {...hitHandlers(component.id, onHover, onSelect)}
+    >
+      <rect
+        x={-component.w / 2}
+        y={-component.d / 2}
+        width={component.w}
+        height={component.d}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={2.4}
+      />
+      <rect
+        x={-component.w / 2}
+        y={-component.d / 2}
+        width={component.w}
+        height={component.d}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={active ? 0.42 : 0.22}
+        strokeDasharray="1.2 0.8"
+        pointerEvents="none"
+      />
+    </g>
+  );
+}
+
+function GateSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
+  const { sx, sy } = toSvg(component.x, component.z, view);
+  const yaw = (component.rotY * 180) / Math.PI;
+  return (
+    <g
+      transform={`translate(${sx} ${sy}) rotate(${yaw})`}
+      opacity={dimmed ? 0.28 : 1}
+      className="cursor-pointer"
+      {...hitHandlers(component.id, onHover, onSelect)}
+    >
+      <rect
+        x={-component.w / 2}
+        y={-component.d / 2}
+        width={component.w}
+        height={component.d}
+        rx={0.2}
+        fill={
+          active
+            ? "var(--alcaster-diagram-equipment)"
+            : "var(--alcaster-diagram-building)"
+        }
+        stroke={strokeFor(component, active)}
+        strokeWidth={active ? 0.2 : 0.1}
+      />
+      <text
+        y={component.d / 2 + 1.05}
+        textAnchor="middle"
+        fill="color-mix(in srgb, var(--alcaster-fg) 50%, transparent)"
+        fontSize={0.85}
+        fontFamily="Inter, system-ui, sans-serif"
+      >
+        {component.name}
+      </text>
+    </g>
+  );
+}
+
+function WeatherSymbol({ component, view, active, dimmed, onHover, onSelect }: SymbolProps) {
   const { sx, sy } = toSvg(component.x, component.z, view);
   const stroke = strokeFor(component, active);
   return (
@@ -662,7 +813,7 @@ function WeatherSymbol({ component, view, active, dimmed, onHover }: SymbolProps
       transform={`translate(${sx} ${sy})`}
       opacity={dimmed ? 0.28 : 1}
       className="cursor-pointer"
-      {...hitHandlers(component.id, onHover)}
+      {...hitHandlers(component.id, onHover, onSelect)}
     >
       <circle r={0.45} fill="#e6740a" stroke={stroke} strokeWidth={0.1} />
       <line x1={0} y1={0} x2={0} y2={-2.4} stroke={stroke} strokeWidth={0.12} />

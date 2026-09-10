@@ -1,6 +1,6 @@
 "use client";
 
-import { CTA } from "@/components/landing/CTA";
+import { ContactSection } from "@/components/landing/ContactSection";
 import { CapabilityGrid } from "@/components/landing/CapabilityGrid";
 import { DigitalTwinSection } from "@/components/landing/DigitalTwinSection";
 import { Hero } from "@/components/landing/Hero";
@@ -22,7 +22,7 @@ function LandingShell() {
           <CapabilityGrid />
           <HowItWorks />
           <WhyAlcaster />
-          <CTA />
+          <ContactSection />
         </LandingSlider>
       </div>
       <Navbar />

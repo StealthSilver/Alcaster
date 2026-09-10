@@ -12,7 +12,7 @@ export function LandingLogo() {
     <div className="pointer-events-none absolute inset-x-0 top-0 z-50 flex justify-center pt-5 sm:pt-6">
       <Link
         href="#top"
-        className="pointer-events-auto relative flex items-center gap-2.5"
+        className="pointer-events-auto relative flex flex-col items-center gap-1.5"
         aria-label="Alcaster home"
         onClick={(event) => {
           event.preventDefault();

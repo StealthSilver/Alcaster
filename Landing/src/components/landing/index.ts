@@ -2,6 +2,7 @@ export { AlertsSection } from "./AlertsSection";
 export { AnalyticsSection } from "./AnalyticsSection";
 export { BuilderSection } from "./BuilderSection";
 export { CapabilityGrid } from "./CapabilityGrid";
+export { ContactSection } from "./ContactSection";
 export { CTA } from "./CTA";
 export { DigitalTwinSection } from "./DigitalTwinSection";
 export { EnterpriseSection } from "./EnterpriseSection";

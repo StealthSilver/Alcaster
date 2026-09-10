@@ -46,15 +46,6 @@ function FlowVisual({ reduced }: { reduced: boolean }) {
       viewport={viewportOnce}
       className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 sm:p-8"
     >
-      <div className="pointer-events-none absolute inset-0 alcaster-grid opacity-40" />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 55% 45% at 50% 30%, rgba(230,116,10,0.07), transparent 70%)",
-        }}
-      />
-
       <div className="relative space-y-8">
         <div>
           <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.18em] text-white/40">
@@ -168,7 +159,6 @@ export function ProblemSection() {
 
   return (
     <section className="relative py-20 sm:py-28">
-      <div className="pointer-events-none absolute inset-0 alcaster-radial opacity-80" />
       <Container className="relative">
         <SectionHeading
           eyebrow="The Problem"

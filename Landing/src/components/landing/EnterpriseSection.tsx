@@ -39,15 +39,6 @@ function SharedPlantVisual({ reduced }: { reduced: boolean }) {
       variants={fadeUp}
       className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-8"
     >
-      <div className="pointer-events-none absolute inset-0 alcaster-grid opacity-35" />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 50% 40% at 50% 45%, rgba(230,116,10,0.08), transparent 70%)",
-        }}
-      />
-
       <div className="relative mx-auto aspect-[16/10] max-w-xl">
         {/* Abstract plant footprint */}
         <svg

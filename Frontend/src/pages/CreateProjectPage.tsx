@@ -59,7 +59,7 @@ export function CreateProjectPage() {
   const [values, setValues] = useState<FormValues>({
     ...emptyValues,
     siteId: selectedSite?.id ?? "",
-    location: selectedSite?.location ?? "",
+    location: selectedSite?.address ?? "",
   });
   const [fields, setFields] = useState<Partial<Record<keyof FormValues, string>>>(
     {},
@@ -74,7 +74,7 @@ export function CreateProjectPage() {
       return {
         ...prev,
         siteId: selectedSite.id,
-        location: prev.location || selectedSite.location,
+        location: prev.location || selectedSite.address,
       };
     });
   }, [selectedSite]);
@@ -123,7 +123,7 @@ export function CreateProjectPage() {
     : { name: "User", role: "Organization Manager", initials: "U" };
 
   return (
-    <DashboardShell user={shellUser} title="Create project">
+    <DashboardShell user={shellUser} title="Create project" hideSiteMeta>
       <div className="max-w-2xl">
         <p className="mb-5 text-sm text-muted">
           Create a project at a site to track plant operations, twins, and performance.
@@ -143,7 +143,6 @@ export function CreateProjectPage() {
             <FormField
               id="project-site"
               label="Site"
-              hint="The site this project belongs to."
               error={fields.siteId}
             >
               <select
@@ -154,7 +153,7 @@ export function CreateProjectPage() {
                   const nextSiteId = event.target.value;
                   const site = sites.find((item) => item.id === nextSiteId);
                   update("siteId", nextSiteId);
-                  if (site && !values.location) update("location", site.location);
+                  if (site && !values.location) update("location", site.address);
                 }}
                 className={formControlClass(fields.siteId)}
               >
@@ -170,7 +169,6 @@ export function CreateProjectPage() {
             <FormField
               id="project-name"
               label="Name"
-              hint="A unique name for this project."
               error={fields.name}
             >
               <input
@@ -187,7 +185,6 @@ export function CreateProjectPage() {
             <FormField
               id="project-location"
               label="Location"
-              hint="Region or state where this project operates."
               error={fields.location}
             >
               <input
@@ -261,7 +258,6 @@ export function CreateProjectPage() {
             <FormField
               id="project-description"
               label="Description"
-              hint="Optional. Shown on the project overview."
               error={fields.description}
             >
               <textarea

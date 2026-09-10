@@ -1,22 +1,29 @@
-import { useMemo, useRef, useState } from "react";
-import { Box, Map } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { FolderTree, Map, Network } from "lucide-react";
 
+import { AssetDetailsPanel } from "@/components/twin/AssetDetailsPanel";
 import { SitemapDiagram } from "@/components/sitemap/SitemapDiagram";
+import { SitemapTree } from "@/components/sitemap/SitemapTree";
+import { useAssetSelection } from "@/hooks/useAssetSelection";
 import type { TwinRecord } from "@/lib/api";
-import { projectTwinPath } from "@/lib/paths";
 import {
   buildSitemapModel,
+  buildSitemapTree,
+  countByKind,
+  findTreeNodeByAssetId,
   SLD_STAGES,
   type SitemapComponent,
   type SitemapKind,
   type SitemapStatus,
+  type SitemapTreeNode,
 } from "@/lib/sitemapModel";
 
 type SitemapViewerProps = {
   twin: TwinRecord;
   projectName: string;
 };
+
+type ViewMode = "map" | "tree";
 
 const statusColor: Record<SitemapStatus, string> = {
   ONLINE: "rgba(120, 180, 140, 0.95)",
@@ -26,15 +33,32 @@ const statusColor: Record<SitemapStatus, string> = {
 
 export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   const model = useMemo(() => buildSitemapModel(twin), [twin]);
+  const tree = useMemo(() => buildSitemapTree(model), [model]);
   const frameRef = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<ViewMode>("map");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [hoveredKind, setHoveredKind] = useState<SitemapKind | null>(null);
   const [pointer, setPointer] = useState({ x: 24, y: 24 });
-  const { spec, derived } = twin;
+  const { selectedAssetId, selectAsset } = useAssetSelection(twin.projectId);
+  const counts = useMemo(() => countByKind(model.components), [model.components]);
+  const plantName = model.plant.projectName || projectName;
+
+  const selectedNode: SitemapTreeNode | null = useMemo(() => {
+    if (!selectedAssetId) return tree;
+    return findTreeNodeByAssetId(tree, selectedAssetId) ?? tree;
+  }, [selectedAssetId, tree]);
 
   const hovered = hoveredId
     ? model.components.find((component) => component.id === hoveredId) ?? null
     : null;
+
+  useEffect(() => {
+    if (!selectedAssetId) return;
+    // Expand tree context when selection arrives from 3D/search.
+    if (view === "map" && findTreeNodeByAssetId(tree, selectedAssetId)?.kind === "module") {
+      // keep map; modules may not be on map
+    }
+  }, [selectedAssetId, tree, view]);
 
   function handleHover(id: string | null) {
     setHoveredId(id);
@@ -46,11 +70,32 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
     }
   }
 
+  function selectFromMap(id: string) {
+    selectAsset(id, { source: "sitemap", focus3d: true });
+  }
+
+  function selectFromTree(node: SitemapTreeNode) {
+    const assetId = node.assetId ?? node.componentId ?? null;
+    if (node.kind === "folder") {
+      selectAsset(null, { source: "tree" });
+      return;
+    }
+    selectAsset(assetId ?? node.id, {
+      source: "tree",
+      focus3d: Boolean(assetId || node.componentId),
+    });
+  }
+
+  function setViewMode(next: ViewMode) {
+    setView(next);
+  }
+
   return (
     <div
       ref={frameRef}
       className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-edge bg-page"
       onMouseMove={(event) => {
+        if (view !== "map") return;
         const box = frameRef.current?.getBoundingClientRect();
         if (!box) return;
         setPointer({
@@ -59,70 +104,85 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
         });
       }}
     >
-      <div className="absolute inset-0 pb-[92px] pt-1">
-        <SitemapDiagram
-          model={model}
-          hoveredId={hoveredId}
-          hoveredKind={hoveredId ? null : hoveredKind}
-          onHover={handleHover}
-        />
-      </div>
-
-      <div className="pointer-events-none absolute inset-0">
-        <div className="pointer-events-none absolute left-3 top-3 max-w-[240px] space-y-2 sm:left-4 sm:top-4">
-          <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
-            <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
-              <Map className="h-3 w-3" />
-              Sitemap
-            </p>
-            <p className="mt-1 truncate text-sm font-semibold text-fg">
-              {projectName}
-            </p>
-            <p className="mt-0.5 text-[11px] text-muted">
-              2D SLD of the digital twin
-            </p>
-          </div>
-          <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
-            <dl className="space-y-1.5 text-[11px]">
-              <Row label="Export" value={`${model.exportMw} MW`} />
-              <Row label="Plant load" value={`${model.plantLoadPct}%`} />
-              <Row label="GHI" value={`${model.irradiance} W/m²`} />
-              <Row label="Modules" value={derived.moduleCount.toLocaleString()} />
-              <Row label="Grid" value={`${spec.gridVoltageKv} kV`} />
-            </dl>
-          </div>
-        </div>
-
-        <div className="pointer-events-auto absolute right-3 top-3 sm:right-4 sm:top-4">
-          <Link
-            to={projectTwinPath(twin.projectId)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-edge-strong bg-page/90 px-3 py-2 text-xs font-medium text-secondary backdrop-blur-sm transition-colors hover:border-edge-strong hover:text-fg"
-          >
-            <Box className="h-3.5 w-3.5" />
-            Open 3D twin
-          </Link>
-        </div>
-
-        <div className="pointer-events-auto absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4">
-          <SldStrip
-            modelCounts={{
-              table: model.layout.tables.length,
-              combiner: model.layout.combiners.length,
-              inverter: model.layout.inverters.length,
-              transformer: model.layout.transformers.length,
-              substation: 1,
-              grid: 1,
-            }}
-            hoveredKind={hoveredKind}
-            onHoverKind={(kind) => {
-              setHoveredId(null);
-              setHoveredKind(kind);
-            }}
+      {view === "map" ? (
+        <div className="absolute inset-0 pb-[88px] pt-1">
+          <SitemapDiagram
+            model={model}
+            hoveredId={hoveredId}
+            hoveredKind={hoveredId ? null : hoveredKind}
+            selectedId={selectedAssetId}
+            onHover={handleHover}
+            onSelect={selectFromMap}
           />
         </div>
+      ) : (
+        <div className="absolute inset-0 pb-3 pt-14 pr-[min(252px,42%)] sm:pt-16">
+          <SitemapTree
+            root={tree}
+            model={model}
+            selectedId={selectedNode?.id ?? tree.id}
+            onSelect={selectFromTree}
+          />
+        </div>
+      )}
+
+      <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-none absolute left-3 top-3 max-w-[220px] sm:left-4 sm:top-4">
+          <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
+            <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
+              {view === "map" ? (
+                <Map className="h-3 w-3" />
+              ) : (
+                <FolderTree className="h-3 w-3" />
+              )}
+              {view === "map" ? "Sitemap" : "Hierarchy"}
+            </p>
+            <p className="mt-1 truncate text-sm font-semibold text-fg">
+              {plantName}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted">
+              {view === "map"
+                ? "Click a component to select its asset"
+                : "Expand folders · select a node for details"}
+            </p>
+          </div>
+        </div>
+
+        <div className="pointer-events-auto absolute right-3 top-3 flex w-[236px] flex-col items-stretch gap-2 sm:right-4 sm:top-4">
+          <ViewToggle view={view} onChange={setViewMode} />
+          <AssetDetailsPanel
+            model={model.assets}
+            selectedAssetId={
+              selectedAssetId && model.assets.assets[selectedAssetId]
+                ? selectedAssetId
+                : selectedNode?.assetId && model.assets.assets[selectedNode.assetId]
+                  ? selectedNode.assetId
+                  : null
+            }
+            onSelect={(assetId, options) =>
+              selectAsset(assetId, {
+                source: "search",
+                focus3d: options?.focus3d ?? Boolean(assetId),
+              })
+            }
+          />
+        </div>
+
+        {view === "map" ? (
+          <div className="pointer-events-auto absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4">
+            <SldStrip
+              modelCounts={counts}
+              hoveredKind={hoveredKind}
+              onHoverKind={(kind) => {
+                setHoveredId(null);
+                setHoveredKind(kind);
+              }}
+            />
+          </div>
+        ) : null}
       </div>
 
-      {hovered ? (
+      {view === "map" && hovered ? (
         <HoverCard
           component={hovered}
           x={pointer.x}
@@ -134,11 +194,56 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   );
 }
 
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: ViewMode;
+  onChange: (view: ViewMode) => void;
+}) {
+  return (
+    <div
+      className="inline-flex self-end rounded-lg border border-edge-strong bg-page/90 p-0.5 backdrop-blur-sm"
+      role="group"
+      aria-label="Sitemap view"
+    >
+      <button
+        type="button"
+        onClick={() => onChange("map")}
+        className={`inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors ${
+          view === "map"
+            ? "bg-fill-strong text-fg"
+            : "text-muted hover:text-fg"
+        }`}
+        aria-pressed={view === "map"}
+      >
+        <Map className="h-3.5 w-3.5" />
+        Map
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("tree")}
+        className={`inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors ${
+          view === "tree"
+            ? "bg-fill-strong text-fg"
+            : "text-muted hover:text-fg"
+        }`}
+        aria-pressed={view === "tree"}
+      >
+        <Network className="h-3.5 w-3.5" />
+        Tree
+      </button>
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-muted">{label}</dt>
-      <dd className="font-medium tabular-nums text-fg">{value}</dd>
+      <dt className="shrink-0 text-muted">{label}</dt>
+      <dd className="min-w-0 text-right font-medium tabular-nums text-fg">
+        {value}
+      </dd>
     </div>
   );
 }
@@ -154,19 +259,19 @@ function HoverCard({
   y: number;
   bounds: DOMRect | null;
 }) {
-  const width = 236;
+  const width = 280;
   const maxLeft = Math.max(12, (bounds?.width ?? 720) - width - 12);
-  const maxTop = Math.max(12, (bounds?.height ?? 480) - 280);
+  const maxTop = Math.max(12, (bounds?.height ?? 480) - 320);
   const left = Math.min(Math.max(12, x + 16), maxLeft);
   const top = Math.min(Math.max(12, y + 16), maxTop);
   return (
     <div
-      className="pointer-events-none absolute z-20 w-[236px] rounded-xl border border-edge-strong bg-page/95 px-3 py-2.5 shadow-[var(--alcaster-shadow)] backdrop-blur-md"
+      className="pointer-events-none absolute z-20 w-[280px] rounded-xl border border-edge-strong bg-page/95 px-3 py-2.5 shadow-[var(--alcaster-shadow)] backdrop-blur-md"
       style={{ left, top }}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-fg">{component.name}</p>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-fg">{component.name}</p>
           <p className="text-[11px] text-muted">{component.typeLabel}</p>
         </div>
         <span
@@ -179,8 +284,8 @@ function HoverCard({
           {component.status}
         </span>
       </div>
-      <dl className="mt-2 space-y-1.5 border-t border-edge pt-2 text-[11px]">
-        {component.rows.map((row) => (
+      <dl className="mt-2 max-h-56 space-y-1.5 overflow-y-auto border-t border-edge pt-2 text-[11px]">
+        {component.rows.slice(0, 8).map((row) => (
           <Row key={row.label} label={row.label} value={row.value} />
         ))}
       </dl>
@@ -197,37 +302,50 @@ function SldStrip({
   hoveredKind: SitemapKind | null;
   onHoverKind: (kind: SitemapKind | null) => void;
 }) {
+  const stages = SLD_STAGES.filter((stage) => (modelCounts[stage.kind] ?? 0) > 0);
   return (
-    <div className="overflow-hidden rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
-        Single-line · arrays to grid
-      </p>
+    <div className="rounded-xl border border-edge-strong bg-page/92 backdrop-blur-sm">
+      <div className="border-b border-edge px-3 py-2">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
+          Power path
+        </p>
+      </div>
       <div
-        className="flex items-center gap-1 overflow-x-auto"
+        className="flex items-stretch gap-0 overflow-x-auto px-1.5 py-1.5"
         onMouseLeave={() => onHoverKind(null)}
       >
-        {SLD_STAGES.map((stage, index) => {
+        {stages.map((stage, index) => {
           const active = hoveredKind === stage.kind;
+          const count = modelCounts[stage.kind] ?? 0;
           return (
             <div key={stage.kind} className="flex min-w-0 items-center">
               {index > 0 ? (
-                <span className="mx-1 h-px w-4 shrink-0 bg-fill-strong sm:w-7" />
+                <span
+                  aria-hidden
+                  className="mx-0.5 h-px w-3 shrink-0 bg-edge-strong sm:w-5"
+                />
               ) : null}
               <button
                 type="button"
                 onMouseEnter={() => onHoverKind(stage.kind)}
                 onFocus={() => onHoverKind(stage.kind)}
                 onBlur={() => onHoverKind(null)}
-                className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
+                className={`flex min-w-[4.5rem] flex-col items-start gap-0.5 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
                   active
-                    ? "border-[#e6740a]/50 bg-accent/12"
-                    : "border-edge-strong bg-fill hover:border-edge-strong"
+                    ? "bg-accent/12 text-fg"
+                    : "text-secondary hover:bg-fill hover:text-fg"
                 }`}
               >
-                <p className="text-[11px] font-medium text-fg">{stage.label}</p>
-                <p className="text-[10px] tabular-nums text-muted">
-                  {modelCounts[stage.kind] ?? 0}
-                </p>
+                <span className="text-[11px] font-medium leading-none">
+                  {stage.label}
+                </span>
+                <span
+                  className={`text-sm font-semibold tabular-nums leading-none ${
+                    active ? "text-accent" : "text-fg"
+                  }`}
+                >
+                  {count.toLocaleString()}
+                </span>
               </button>
             </div>
           );

@@ -46,8 +46,6 @@ export function HowItWorks() {
 
   return (
     <section id="technology" className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden py-6 sm:py-8">
-      <div className="pointer-events-none absolute inset-0 alcaster-radial opacity-60" />
-
       <Container className="relative">
         <SectionHeading
           eyebrow="How it works"

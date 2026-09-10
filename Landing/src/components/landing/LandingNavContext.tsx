@@ -12,8 +12,8 @@ import {
 import {
   LANDING_PANELS,
   PANEL_COUNT,
-  isLandingPanelId,
   panelIndex,
+  resolvePanelId,
   type LandingPanelId,
 } from "./panels";
 
@@ -30,8 +30,7 @@ const LandingNavContext = createContext<LandingNavContextValue | null>(null);
 
 function readHash(): LandingPanelId {
   const raw = window.location.hash.replace("#", "");
-  if (raw && isLandingPanelId(raw)) return raw;
-  return "top";
+  return resolvePanelId(raw) ?? "top";
 }
 
 function writeHash(id: LandingPanelId) {
@@ -86,8 +85,8 @@ export function LandingNavProvider({ children }: { children: React.ReactNode }) 
       if (!target) return;
       const href = target.getAttribute("href");
       if (!href?.startsWith("#")) return;
-      const id = href.slice(1);
-      if (!isLandingPanelId(id)) return;
+      const id = resolvePanelId(href.slice(1));
+      if (!id) return;
       event.preventDefault();
       goTo(id);
     };

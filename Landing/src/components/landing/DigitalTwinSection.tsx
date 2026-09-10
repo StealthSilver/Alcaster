@@ -57,15 +57,6 @@ function TwinBridgeVisual({ reduced }: { reduced: boolean }) {
       viewport={viewportOnce}
       className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#010609]"
     >
-      <div className="pointer-events-none absolute inset-0 alcaster-grid opacity-50" />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 50% 55% at 50% 45%, rgba(230,116,10,0.11), transparent 68%)",
-        }}
-      />
-
       <svg
         viewBox="0 0 720 280"
         className="relative h-auto w-full"

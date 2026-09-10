@@ -2,10 +2,11 @@ type FieldProps = {
   id: string;
   label: string;
   error?: string;
+  tight?: boolean;
   children: React.ReactNode;
 };
 
-export function Field({ id, label, error, children }: FieldProps) {
+export function Field({ id, label, error, tight = false, children }: FieldProps) {
   return (
     <div>
       <label
@@ -14,7 +15,7 @@ export function Field({ id, label, error, children }: FieldProps) {
       >
         {label}
       </label>
-      <div className="mt-2">{children}</div>
+      <div className={tight ? "mt-1" : "mt-2"}>{children}</div>
       {error ? (
         <p id={`${id}-error`} role="alert" className="mt-1.5 text-xs text-danger">
           {error}

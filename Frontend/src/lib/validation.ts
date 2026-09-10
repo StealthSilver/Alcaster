@@ -5,10 +5,26 @@ export type SignInValues = {
   password: string;
 };
 
+export const ACCESS_ROLES = [
+  "Admin",
+  "Site Manager",
+  "Site Engineer",
+  "Developer",
+] as const;
+
+export const GENDERS = ["Male", "Female", "Other"] as const;
+
+export const TEAM_PASSWORD_HINT =
+  "Password must be 4–15 characters and include uppercase, lowercase, a number, and a special character.";
+
+export type AccessRole = (typeof ACCESS_ROLES)[number];
+export type Gender = (typeof GENDERS)[number];
+
 export type RequestAccessValues = {
   fullName: string;
   email: string;
   company: string;
+  role: AccessRole;
   message: string;
 };
 
@@ -31,7 +47,7 @@ export function validateSignIn(values: SignInValues) {
 }
 
 export function validateRequestAccess(values: RequestAccessValues) {
-  const fields: Partial<RequestAccessValues> = {};
+  const fields: Partial<Record<keyof RequestAccessValues, string>> = {};
 
   const fullName = values.fullName.trim();
   if (!fullName) fields.fullName = "Full name is required.";
@@ -45,6 +61,10 @@ export function validateRequestAccess(values: RequestAccessValues) {
   if (!company) fields.company = "Company is required.";
   else if (company.length < 2) fields.company = "Enter your company name.";
 
+  if (!ACCESS_ROLES.includes(values.role)) {
+    fields.role = "Select a role.";
+  }
+
   const message = values.message.trim();
   if (!message) fields.message = "Message is required.";
   else if (message.length < 10) {
@@ -52,6 +72,17 @@ export function validateRequestAccess(values: RequestAccessValues) {
   }
 
   return fields;
+}
+
+export function isTeamPassword(value: string) {
+  return (
+    value.length >= 4 &&
+    value.length <= 15 &&
+    /[A-Z]/.test(value) &&
+    /[a-z]/.test(value) &&
+    /\d/.test(value) &&
+    /[^A-Za-z0-9]/.test(value)
+  );
 }
 
 export function validateUpdateProfile(values: UpdateProfileValues) {

@@ -262,7 +262,6 @@ function ArchCardView({ arch }: { arch: ArchCard }) {
 export function TechnologySection() {
   return (
     <section id="architectures" className="relative scroll-mt-24 py-20 sm:py-28">
-      <div className="pointer-events-none absolute inset-0 alcaster-radial opacity-60" />
       <Container className="relative">
         <SectionHeading
           eyebrow="Technology"

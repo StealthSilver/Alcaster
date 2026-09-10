@@ -273,13 +273,6 @@ export function SimulationSection() {
 
             {/* Solar field + clouds + generation */}
             <div className="relative min-h-[240px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#010609]">
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    "radial-gradient(ellipse 50% 45% at 70% 20%, rgba(230,116,10,0.12), transparent 65%)",
-                }}
-              />
               <CloudField reduced={reduced} />
               <div className="absolute bottom-4 left-4 right-4 flex justify-end sm:bottom-5 sm:right-5">
                 <GenerationReadout value={generation} active={inView} />

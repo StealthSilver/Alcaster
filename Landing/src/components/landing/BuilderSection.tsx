@@ -141,14 +141,6 @@ function BuilderCanvas({
 }) {
   return (
     <div className="relative flex h-full min-h-[220px] items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-[#010609]">
-      <div className="pointer-events-none absolute inset-0 alcaster-grid opacity-40" />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 55% 50% at 50% 45%, rgba(230,116,10,0.1), transparent 70%)",
-        }}
-      />
       <motion.svg
         viewBox="80 40 560 260"
         className="relative h-auto w-full max-h-[280px]"

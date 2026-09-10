@@ -2,71 +2,51 @@ import Link from "next/link";
 
 import { Container } from "@/components/ui/Container";
 
-const COLUMNS = [
-  {
-    title: "Platform",
-    links: [
-      { label: "Platform", href: "#platform" },
-      { label: "Solutions", href: "#solutions" },
-      { label: "Technology", href: "#technology" },
-      { label: "Resources", href: "#resources" },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      { label: "About", href: "#resources" },
-      { label: "Contact", href: "#demo" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { label: "Privacy", href: "#privacy" },
-      { label: "Terms", href: "#terms" },
-    ],
-  },
+import { NAV_LINKS } from "./panels";
+
+const LEGAL_LINKS = [
+  { label: "Privacy", href: "#privacy" },
+  { label: "Terms", href: "#terms" },
 ] as const;
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/[0.08]">
-      <Container className="py-12 sm:py-14">
-        <div className="flex flex-col gap-10 lg:flex-row lg:justify-between lg:gap-16">
-          <div className="max-w-xs">
-            <p className="text-sm font-semibold tracking-[0.2em] text-white">
-              ALCASTER
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-white/40">
-              Digital Twins for Renewable Energy
-            </p>
-          </div>
+    <footer className="relative shrink-0 border-t border-white/[0.08]">
+      <Container className="flex flex-col gap-4 py-5 sm:py-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-semibold tracking-[0.18em] text-white">
+            ALCASTER
+          </p>
 
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-12">
-            {COLUMNS.map((col) => (
-              <div key={col.title}>
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/35">
-                  {col.title}
-                </p>
-                <ul className="mt-4 space-y-2.5">
-                  {col.links.map((link) => (
-                    <li key={link.label}>
-                      <Link
-                        href={link.href}
-                        className="text-sm text-white/50 transition-colors duration-300 hover:text-white"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <nav
+            aria-label="Footer"
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:justify-end"
+          >
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.id}
+                href={`#${link.id}`}
+                className="text-[13px] text-white/45 transition-colors duration-300 hover:text-white"
+              >
+                {link.label}
+              </Link>
             ))}
-          </div>
+          </nav>
         </div>
 
-        <div className="mt-12 border-t border-white/[0.06] pt-6">
+        <div className="flex flex-col gap-2 border-t border-white/[0.06] pt-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-white/30">© 2026 Alcaster</p>
+          <div className="flex items-center gap-4">
+            {LEGAL_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="text-xs text-white/28 transition-colors duration-300 hover:text-white/55"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </Container>
     </footer>

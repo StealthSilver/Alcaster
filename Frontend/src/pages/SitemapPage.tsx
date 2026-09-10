@@ -1,11 +1,12 @@
-import { Map } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Box, Map } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { DashboardShell } from "@/components/dashboard";
 import { SitemapViewer } from "@/components/sitemap/SitemapViewer";
 import { useAuth } from "@/context/AuthContext";
 import { useSyncProjectFromRoute } from "@/hooks/useSyncProjectFromRoute";
+import { useAssetSelection } from "@/hooks/useAssetSelection";
 import {
   ApiError,
   getProjectRequest,
@@ -23,6 +24,9 @@ export function SitemapPage() {
   const [twin, setTwin] = useState<TwinRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { selectedAssetId, selectAsset } = useAssetSelection(projectId);
+  const hydratedUrl = useRef(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -51,17 +55,43 @@ export function SitemapPage() {
     };
   }, [projectId]);
 
+  useEffect(() => {
+    if (hydratedUrl.current || !projectId) return;
+    const fromUrl = searchParams.get("asset");
+    if (!fromUrl) {
+      hydratedUrl.current = true;
+      return;
+    }
+    selectAsset(fromUrl, { source: "external", focus3d: false });
+    hydratedUrl.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete("asset");
+    setSearchParams(next, { replace: true });
+  }, [projectId, searchParams, selectAsset, setSearchParams]);
+
   const shellUser = user
     ? { name: user.name, role: user.role, initials: user.initials }
     : { name: "User", role: "Organization Manager", initials: "U" };
 
   const ready = Boolean(project && twin && !loading && !error);
+  const pageTitle = project ? `${project.name} / Sitemap` : "Sitemap";
 
   return (
     <DashboardShell
       user={shellUser}
-      title="Sitemap"
+      title={pageTitle}
       layout={ready ? "fill" : "default"}
+      actions={
+        project && twin ? (
+          <Link
+            to={projectTwinPath(project.id, selectedAssetId)}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-edge-strong px-3 text-sm text-secondary transition-colors hover:bg-fill hover:text-fg"
+          >
+            <Box className="h-3.5 w-3.5" />
+            Open 3D twin
+          </Link>
+        ) : undefined
+      }
     >
       {loading ? (
         <p className="text-sm text-muted">Loading sitemap…</p>

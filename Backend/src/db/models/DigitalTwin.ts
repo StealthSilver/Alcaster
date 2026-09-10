@@ -32,6 +32,7 @@ const twinSpecSchema = new Schema(
     includeWeatherStation: { type: Boolean, default: true },
     includeFence: { type: Boolean, default: true },
     includeRoads: { type: Boolean, default: true },
+    intake: { type: Schema.Types.Mixed, default: {} },
   },
   { _id: false },
 );

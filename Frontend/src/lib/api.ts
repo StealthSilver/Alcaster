@@ -6,6 +6,7 @@ export type AuthUser = {
   initials: string;
   organizationId: string | null;
   organizationName: string | null;
+  siteIds: string[];
   createdAt: string | null;
 };
 
@@ -13,6 +14,7 @@ export type RequestAccessPayload = {
   fullName: string;
   email: string;
   company: string;
+  role: string;
   message: string;
 };
 
@@ -120,16 +122,20 @@ export function signOutRequest() {
 
 export type ProjectType = "solar" | "wind" | "hybrid" | "bess";
 export type ProjectStatus = "active" | "pending" | "on_hold" | "completed";
-export type SiteStatus = "active" | "pending" | "on_hold";
+export type SiteType = "solar" | "wind" | "bess" | "hybrid";
+export type SiteStatus = "active" | "inactive";
 export type TaskStatus = "open" | "in_progress" | "completed";
 
 export type Site = {
   id: string;
   organizationId: string;
+  organizationName: string;
   name: string;
-  location: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  type: SiteType;
   status: SiteStatus;
-  description: string;
   projectCount: number;
   createdBy: string;
   createdAt: string;
@@ -138,10 +144,14 @@ export type Site = {
 
 export type CreateSitePayload = {
   name: string;
-  location: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  type: SiteType;
   status: SiteStatus;
-  description: string;
 };
+
+export type UpdateSitePayload = CreateSitePayload;
 
 export type Project = {
   id: string;
@@ -247,6 +257,15 @@ export type CreateProjectPayload = {
   description: string;
 };
 
+export type UpdateProjectPayload = {
+  name: string;
+  location: string;
+  type: ProjectType;
+  status: ProjectStatus;
+  capacityMw: number;
+  description: string;
+};
+
 export function getDashboardRequest(siteId?: string) {
   const query = siteId ? `?siteId=${encodeURIComponent(siteId)}` : "";
   return request<DashboardPayload>(`/api/dashboard${query}`);
@@ -263,6 +282,134 @@ export function createSiteRequest(payload: CreateSitePayload) {
   });
 }
 
+export function updateSiteRequest(siteId: string, payload: UpdateSitePayload) {
+  return request<{ site: Site }>(`/api/sites/${encodeURIComponent(siteId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteSiteRequest(siteId: string) {
+  return request<{ message: string }>(
+    `/api/sites/${encodeURIComponent(siteId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export type Gender = "Male" | "Female" | "Other";
+
+export type TeamMemberSite = {
+  id: string;
+  name: string;
+  type: SiteType;
+};
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  gender: string;
+  designation: string;
+  company: string;
+  siteIds: string[];
+  sites: TeamMemberSite[];
+  initials: string;
+  createdAt: string;
+};
+
+export type CreateTeamMemberPayload = {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  gender: Gender;
+  designation: string;
+  company: string;
+  siteIds: string[];
+};
+
+export type UpdateTeamMemberPayload = {
+  name: string;
+  email: string;
+  password?: string;
+  role: string;
+  gender: Gender;
+  designation: string;
+  company: string;
+  siteIds: string[];
+};
+
+export function listTeamMembersRequest(siteId: string) {
+  return request<{ members: TeamMember[] }>(
+    `/api/team?siteId=${encodeURIComponent(siteId)}`,
+  );
+}
+
+export function createTeamMemberRequest(payload: CreateTeamMemberPayload) {
+  return request<{ member: TeamMember }>("/api/team", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateTeamMemberRequest(
+  userId: string,
+  payload: UpdateTeamMemberPayload,
+) {
+  return request<{ member: TeamMember }>(
+    `/api/team/${encodeURIComponent(userId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function deleteTeamMemberRequest(userId: string) {
+  return request<{ message: string }>(
+    `/api/team/${encodeURIComponent(userId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export function listUsersRequest() {
+  return request<{ users: TeamMember[] }>("/api/users");
+}
+
+export function getUserRequest(userId: string) {
+  return request<{ user: TeamMember }>(
+    `/api/users/${encodeURIComponent(userId)}`,
+  );
+}
+
+export function createUserRequest(payload: CreateTeamMemberPayload) {
+  return request<{ user: TeamMember }>("/api/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateUserRequest(
+  userId: string,
+  payload: UpdateTeamMemberPayload,
+) {
+  return request<{ user: TeamMember }>(
+    `/api/users/${encodeURIComponent(userId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function deleteUserRequest(userId: string) {
+  return request<{ message: string }>(
+    `/api/users/${encodeURIComponent(userId)}`,
+    { method: "DELETE" },
+  );
+}
+
 export function listProjectsRequest(siteId: string) {
   return request<{ projects: Project[] }>(
     `/api/projects?siteId=${encodeURIComponent(siteId)}`,
@@ -274,6 +421,26 @@ export function createProjectRequest(payload: CreateProjectPayload) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function updateProjectRequest(
+  projectId: string,
+  payload: UpdateProjectPayload,
+) {
+  return request<{ project: Project }>(
+    `/api/projects/${encodeURIComponent(projectId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function deleteProjectRequest(projectId: string) {
+  return request<{ message: string }>(
+    `/api/projects/${encodeURIComponent(projectId)}`,
+    { method: "DELETE" },
+  );
 }
 
 export function getProjectRequest(projectId: string) {
@@ -315,6 +482,7 @@ export type TwinSpec = {
   includeWeatherStation: boolean;
   includeFence: boolean;
   includeRoads: boolean;
+  intake?: Record<string, string>;
 };
 
 export type TwinDerived = {

@@ -12,6 +12,13 @@ const userSchema = new Schema(
     },
     role: { type: String, required: true, trim: true },
     passwordHash: { type: String, required: true },
+    gender: { type: String, default: "", trim: true },
+    designation: { type: String, default: "", trim: true },
+    company: { type: String, default: "", trim: true },
+    siteIds: {
+      type: [{ type: Types.ObjectId, ref: "Site" }],
+      default: [],
+    },
     organizationId: {
       type: Types.ObjectId,
       ref: "Organization",

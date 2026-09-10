@@ -5,8 +5,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { WorkspaceProvider } from "@/context/WorkspaceContext";
 import { AuthPage } from "@/pages/AuthPage";
-import { CreateProjectPage } from "@/pages/CreateProjectPage";
-import { CreateSitePage } from "@/pages/CreateSitePage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { DigitalTwinPage } from "@/pages/DigitalTwinPage";
 import { ProjectDashboardPage } from "@/pages/ProjectDashboardPage";
@@ -16,6 +14,10 @@ import { ProfilePage } from "@/pages/ProfilePage";
 import { ScadaPage } from "@/pages/ScadaPage";
 import { SectionPage } from "@/pages/SectionPage";
 import { SitesPage } from "@/pages/SitesPage";
+import { UsersPage } from "@/pages/UsersPage";
+import { TeamPage } from "@/pages/TeamPage";
+import { AssignedSitesPage } from "@/pages/AssignedSitesPage";
+import { MapPage } from "@/pages/MapPage";
 
 export default function App() {
   return (
@@ -36,7 +38,7 @@ export default function App() {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/dashboard" element={<Navigate to="/" replace />} />
                 <Route path="/projects" element={<ProjectsPage />} />
-                <Route path="/projects/new" element={<CreateProjectPage />} />
+                <Route path="/projects/new" element={<Navigate to="/projects" replace />} />
                 <Route
                   path="/projects/:projectId"
                   element={<ProjectDashboardPage />}
@@ -90,8 +92,13 @@ export default function App() {
                   }
                 />
                 <Route path="/sites" element={<SitesPage />} />
-                <Route path="/sites/new" element={<CreateSitePage />} />
+                <Route path="/sites/new" element={<Navigate to="/sites" replace />} />
+                <Route path="/map" element={<MapPage />} />
+                <Route path="/users" element={<UsersPage />} />
+                <Route path="/team" element={<TeamPage />} />
+                <Route path="/assigned-sites" element={<AssignedSitesPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/profile/:userId" element={<ProfilePage />} />
                 <Route
                   path="/alerts"
                   element={

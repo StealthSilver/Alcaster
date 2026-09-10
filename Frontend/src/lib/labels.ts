@@ -1,21 +1,31 @@
-import type { ProjectStatus, ProjectType, SiteStatus, TaskStatus } from "@/lib/api";
+import type {
+  ProjectStatus,
+  ProjectType,
+  SiteStatus,
+  SiteType,
+  TaskStatus,
+} from "@/lib/api";
 
 export const siteStatusLabel: Record<SiteStatus, string> = {
   active: "Active",
-  pending: "Pending",
-  on_hold: "On Hold",
+  inactive: "Inactive",
 };
 
 export const siteStatusColor: Record<SiteStatus, string> = {
   active: "var(--alcaster-success)",
-  pending: "var(--alcaster-accent)",
-  on_hold: "var(--alcaster-muted)",
+  inactive: "var(--alcaster-muted)",
 };
 
 export const siteStatusLozenge: Record<SiteStatus, string> = {
   active: "bg-[var(--lozenge-active-bg)] text-[var(--lozenge-active-fg)]",
-  pending: "bg-[var(--lozenge-pending-bg)] text-[var(--lozenge-pending-fg)]",
-  on_hold: "bg-[var(--lozenge-hold-bg)] text-[var(--lozenge-hold-fg)]",
+  inactive: "bg-[var(--lozenge-hold-bg)] text-[var(--lozenge-hold-fg)]",
+};
+
+export const siteTypeLabel: Record<SiteType, string> = {
+  solar: "Solar",
+  wind: "Wind",
+  bess: "BESS",
+  hybrid: "Hybrid",
 };
 
 export const projectTypeLabel: Record<ProjectType, string> = {

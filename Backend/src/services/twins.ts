@@ -7,7 +7,7 @@ import type {
   TwinRecord,
   TwinSpec,
 } from "../types.js";
-import { findProjectForOrg } from "./projects.js";
+import { findProjectForOrg, getProject } from "./projects.js";
 import { requireOrganizationId } from "./sites.js";
 
 const ACRES_TO_M2 = 4046.8564224;
@@ -76,7 +76,7 @@ export async function getTwin(
   projectId: string,
 ): Promise<TwinRecord | null> {
   const organizationId = requireOrganizationId(user);
-  await findProjectForOrg(organizationId, projectId);
+  await getProject(user, projectId);
   const doc = await DigitalTwinModel.findOne({
     organizationId,
     projectId,
@@ -91,6 +91,7 @@ export async function upsertTwin(
   input: CreateTwinInput,
 ): Promise<TwinRecord> {
   const organizationId = requireOrganizationId(user);
+  await getProject(user, projectId);
   const project = await findProjectForOrg(organizationId, projectId);
   const derived = deriveTwinStats(input);
 

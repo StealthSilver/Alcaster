@@ -6,6 +6,8 @@ import { config } from "./config.js";
 import { errorHandler } from "./middleware/auth.js";
 import { authRouter } from "./routes/auth.js";
 import { dashboardRouter, projectsRouter, sitesRouter } from "./routes/projects.js";
+import { teamRouter } from "./routes/team.js";
+import { usersRouter } from "./routes/users.js";
 
 export function createApp() {
   const app = express();
@@ -36,6 +38,8 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/sites", sitesRouter);
+  app.use("/api/team", teamRouter);
+  app.use("/api/users", usersRouter);
   app.use("/api/projects", projectsRouter);
 
   app.use((_req, res) => {

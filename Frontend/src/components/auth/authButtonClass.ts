@@ -1,0 +1,2 @@
+export const authButtonClass =
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 text-sm font-medium tracking-tight text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] transition-colors duration-200 hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/45 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-55";

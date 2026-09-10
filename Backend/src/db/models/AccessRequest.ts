@@ -11,6 +11,13 @@ const accessRequestSchema = new Schema(
       trim: true,
     },
     company: { type: String, required: true, trim: true },
+    role: {
+      type: String,
+      required: true,
+      trim: true,
+      enum: ["Admin", "Site Manager", "Site Engineer", "Developer"],
+      default: "Site Manager",
+    },
     message: { type: String, required: true, trim: true },
   },
   {

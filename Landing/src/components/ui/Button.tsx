@@ -6,17 +6,16 @@ type ButtonVariant = "primary" | "secondary" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
 
 const variants: Record<ButtonVariant, string> = {
-  primary:
-    "bg-[#e6740a] text-white hover:bg-[#e6740a]/90 shadow-[0_0_0_1px_rgba(230,116,10,0.35)]",
+  primary: "bg-[#e6740a] text-white hover:bg-[#d46808]",
   secondary:
-    "border border-white/15 bg-white/[0.03] text-white hover:border-white/25 hover:bg-white/[0.06]",
+    "border border-white/20 bg-transparent text-white hover:border-white/35 hover:bg-white/[0.05]",
   ghost: "text-white/70 hover:text-white hover:bg-white/[0.04]",
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-9 px-3.5 text-sm",
-  md: "h-11 px-5 text-sm",
-  lg: "h-12 px-6 text-[15px]",
+  sm: "h-8 px-3.5 text-[13px]",
+  md: "h-10 px-5 text-sm",
+  lg: "h-11 px-5 text-sm",
 };
 
 type CommonProps = {
@@ -33,6 +32,8 @@ type ButtonAsButton = CommonProps &
 
 type ButtonAsLink = CommonProps & {
   href: string;
+  target?: React.HTMLAttributeAnchorTarget;
+  rel?: string;
   onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 };
 
@@ -45,15 +46,26 @@ export function Button(props: ButtonAsButton | ButtonAsLink) {
   } = props;
 
   const classes = cn(
-    "inline-flex items-center justify-center gap-2 rounded-lg font-medium tracking-tight transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6740a]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#010609]",
+    "inline-flex items-center justify-center gap-2 rounded-md font-semibold tracking-[-0.01em] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6740a]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#010609]",
     variants[variant],
     sizes[size],
     className,
   );
 
   if ("href" in props && props.href) {
+    const { href, target, onClick } = props;
+    const rel =
+      props.rel ??
+      (target === "_blank" ? "noopener noreferrer" : undefined);
+
     return (
-      <Link href={props.href} className={classes} onClick={props.onClick}>
+      <Link
+        href={href}
+        className={classes}
+        target={target}
+        rel={rel}
+        onClick={onClick}
+      >
         {children}
       </Link>
     );

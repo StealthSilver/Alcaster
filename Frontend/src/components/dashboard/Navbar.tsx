@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Bell, LogOut, Menu, Search, User } from "lucide-react";
+import { Bell, LogOut, MapPin, Menu, Search, User, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/context/AuthContext";
 import type { DashboardUser } from "@/data/dashboard";
+import { canManageUsers } from "@/lib/roles";
 import { AlcasterLogo } from "@/components/theme/AlcasterLogo";
 import { ThemeMenuItem } from "@/components/theme/ThemeToggle";
 
@@ -22,7 +23,7 @@ type NavbarProps = {
 
 export function Navbar({ user, onMenuClick }: NavbarProps) {
   return (
-    <header className="z-40 flex h-14 shrink-0 items-center border-b border-edge bg-nav">
+    <header className="relative z-50 flex h-14 shrink-0 items-center border-b border-edge bg-nav">
       <button
         type="button"
         onClick={onMenuClick}
@@ -189,6 +190,26 @@ function ProfileMenu({ user }: { user: DashboardUser }) {
             >
               <User className="h-3.5 w-3.5" strokeWidth={1.6} />
               Profile
+            </Link>
+            {canManageUsers(user.role) ? (
+              <Link
+                to="/users"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={menuItemClass}
+              >
+                <Users className="h-3.5 w-3.5" strokeWidth={1.6} />
+                Users
+              </Link>
+            ) : null}
+            <Link
+              to="/assigned-sites"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={menuItemClass}
+            >
+              <MapPin className="h-3.5 w-3.5" strokeWidth={1.6} />
+              Assigned sites
             </Link>
             <ThemeMenuItem />
             <button

@@ -10,15 +10,24 @@ import {
   createSiteSchema,
   createTwinSchema,
   parseBody,
+  updateProjectSchema,
+  updateSiteSchema,
 } from "../lib/validation.js";
 import {
   createProject,
+  deleteProject,
   getDashboard,
   getProject,
   getProjectDashboard,
   listProjects,
+  updateProject,
 } from "../services/projects.js";
-import { createSite, listSites } from "../services/sites.js";
+import {
+  createSite,
+  deleteSite,
+  listSites,
+  updateSite,
+} from "../services/sites.js";
 import { getTwin, upsertTwin } from "../services/twins.js";
 
 export const dashboardRouter = Router();
@@ -65,6 +74,14 @@ sitesRouter.get(
   },
 );
 
+function routeSiteId(req: Request): string {
+  const value = req.params.siteId;
+  if (typeof value !== "string" || !value) {
+    throw new HttpError(400, "Select a valid site.");
+  }
+  return value;
+}
+
 sitesRouter.post(
   "/",
   requireAuth,
@@ -74,6 +91,35 @@ sitesRouter.post(
       const input = parseBody(createSiteSchema, req.body);
       const site = await createSite(user, input);
       res.status(201).json({ site });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+sitesRouter.patch(
+  "/:siteId",
+  requireAuth,
+  async (req: Request, res: Response, next) => {
+    try {
+      const { user } = req as AuthenticatedRequest;
+      const input = parseBody(updateSiteSchema, req.body);
+      const site = await updateSite(user, routeSiteId(req), input);
+      res.status(200).json({ site });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+sitesRouter.delete(
+  "/:siteId",
+  requireAuth,
+  async (req: Request, res: Response, next) => {
+    try {
+      const { user } = req as AuthenticatedRequest;
+      await deleteSite(user, routeSiteId(req));
+      res.status(200).json({ message: "Site deleted." });
     } catch (error) {
       next(error);
     }
@@ -103,6 +149,35 @@ projectsRouter.post(
       const input = parseBody(createProjectSchema, req.body);
       const project = await createProject(user, input);
       res.status(201).json({ project });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+projectsRouter.patch(
+  "/:projectId",
+  requireAuth,
+  async (req: Request, res: Response, next) => {
+    try {
+      const { user } = req as AuthenticatedRequest;
+      const input = parseBody(updateProjectSchema, req.body);
+      const project = await updateProject(user, routeProjectId(req), input);
+      res.status(200).json({ project });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+projectsRouter.delete(
+  "/:projectId",
+  requireAuth,
+  async (req: Request, res: Response, next) => {
+    try {
+      const { user } = req as AuthenticatedRequest;
+      await deleteProject(user, routeProjectId(req));
+      res.status(200).json({ message: "Project deleted." });
     } catch (error) {
       next(error);
     }

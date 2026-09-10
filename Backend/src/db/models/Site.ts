@@ -1,6 +1,8 @@
 import { Schema, model, Types } from "mongoose";
 
-export const SITE_STATUSES = ["active", "pending", "on_hold"] as const;
+export const SITE_TYPES = ["solar", "wind", "bess", "hybrid"] as const;
+export const SITE_STATUSES = ["active", "inactive"] as const;
+export type SiteType = (typeof SITE_TYPES)[number];
 export type SiteStatus = (typeof SITE_STATUSES)[number];
 
 const siteSchema = new Schema(
@@ -12,7 +14,16 @@ const siteSchema = new Schema(
       index: true,
     },
     name: { type: String, required: true, trim: true },
-    location: { type: String, required: true, trim: true },
+    address: { type: String, required: true, trim: true },
+    location: { type: String, trim: true, default: "" },
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true },
+    type: {
+      type: String,
+      required: true,
+      enum: SITE_TYPES,
+      default: "solar",
+    },
     status: {
       type: String,
       required: true,
@@ -25,6 +36,7 @@ const siteSchema = new Schema(
   {
     timestamps: true,
     collection: "sites",
+    strict: false,
   },
 );
 

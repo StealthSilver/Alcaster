@@ -3,8 +3,10 @@ import {
   FileText,
   FolderKanban,
   LayoutDashboard,
+  Map,
   MapPin,
   Settings,
+  Users,
   X,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -15,7 +17,9 @@ import { iconButtonClass, sidebarItemClass } from "./panel";
 const siteNav: SidebarNavItem[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard, match: "dashboard" },
   { href: "/sites", label: "Sites", Icon: MapPin },
+  { href: "/map", label: "Map", Icon: Map },
   { href: "/projects", label: "Projects", Icon: FolderKanban },
+  { href: "/team", label: "Team", Icon: Users },
   { href: "/alerts", label: "Alerts", Icon: AlertTriangle },
   { href: "/reports", label: "Reports", Icon: FileText },
   { href: "/settings", label: "Settings", Icon: Settings },
@@ -39,7 +43,7 @@ export function SiteSidebar({ open, onClose }: SiteSidebarProps) {
         aria-hidden={!open}
       />
 
-      <div className="relative z-40 hidden w-14 shrink-0 lg:block">
+      <div className="relative z-50 hidden w-14 shrink-0 lg:block">
         <aside
           className="group/site absolute inset-y-0 left-0 flex w-14 flex-col overflow-hidden border-r border-edge bg-nav transition-[width] duration-200 ease-out hover:w-56 hover:overflow-visible"
           aria-label="Site navigation"

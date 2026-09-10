@@ -10,6 +10,10 @@
 
 export const SITE_NAME = "Alcaster";
 
+export const CONTACT_EMAIL = "rajatsaraswat1729@gmail.com";
+
+export const DEMO_APP_URL = "https://alcaster-w6n5.vercel.app/";
+
 export const SITE_TITLE =
   "Alcaster — Renewable Energy Digital Twin Platform";
 

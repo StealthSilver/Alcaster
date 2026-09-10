@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { Eye, EyeOff, Loader2, X } from "lucide-react";
 
 import { DashboardShell } from "@/components/dashboard";
@@ -11,7 +11,8 @@ import {
   sectionTitleClass,
 } from "@/components/dashboard/panel";
 import { useAuth } from "@/context/AuthContext";
-import { ApiError } from "@/lib/api";
+import { ApiError, getUserRequest, type TeamMember } from "@/lib/api";
+import { canManageUsers } from "@/lib/roles";
 import { validateUpdateProfile } from "@/lib/validation";
 
 type ProfileForm = {
@@ -32,11 +33,16 @@ function formatJoined(iso: string | null | undefined) {
 }
 
 export function ProfilePage() {
-  const { user, updateProfile, deleteAccount } = useAuth();
+  const { user: sessionUser, updateProfile, deleteAccount } = useAuth();
+  const { userId } = useParams();
   const navigate = useNavigate();
+  const viewingSelf = !userId || userId === sessionUser?.id;
+  const [otherUser, setOtherUser] = useState<TeamMember | null>(null);
+  const [otherError, setOtherError] = useState<string | null>(null);
+  const [otherLoading, setOtherLoading] = useState(Boolean(userId) && !viewingSelf);
   const [editing, setEditing] = useState(false);
   const [values, setValues] = useState<ProfileForm>({
-    name: user?.name ?? "",
+    name: sessionUser?.name ?? "",
     currentPassword: "",
     newPassword: "",
   });
@@ -49,27 +55,86 @@ export function ProfilePage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
-    if (!editing && user) {
+    if (!sessionUser || viewingSelf || !userId) {
+      setOtherUser(null);
+      setOtherError(null);
+      setOtherLoading(false);
+      return;
+    }
+    if (!canManageUsers(sessionUser.role)) return;
+
+    let cancelled = false;
+    setOtherLoading(true);
+    getUserRequest(userId)
+      .then(({ user: found }) => {
+        if (cancelled) return;
+        setOtherUser(found);
+        setOtherError(null);
+      })
+      .catch((caught: unknown) => {
+        if (cancelled) return;
+        setOtherUser(null);
+        setOtherError(
+          caught instanceof ApiError
+            ? caught.message
+            : "Unable to load this profile.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setOtherLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionUser, userId, viewingSelf]);
+
+  useEffect(() => {
+    if (!viewingSelf) {
+      setEditing(false);
+      setDeleteOpen(false);
+    }
+  }, [viewingSelf]);
+
+  useEffect(() => {
+    if (!editing && sessionUser && viewingSelf) {
       setValues({
-        name: user.name,
+        name: sessionUser.name,
         currentPassword: "",
         newPassword: "",
       });
     }
-  }, [editing, user]);
+  }, [editing, sessionUser, viewingSelf]);
 
-  const shellUser = user
-    ? { name: user.name, role: user.role, initials: user.initials }
+  const shellUser = sessionUser
+    ? { name: sessionUser.name, role: sessionUser.role, initials: sessionUser.initials }
     : { name: "User", role: "Organization Manager", initials: "U" };
 
-  if (!user) return null;
+  if (!sessionUser) return null;
+
+  if (!viewingSelf && !canManageUsers(sessionUser.role)) {
+    return <Navigate to="/profile" replace />;
+  }
+
+  const profile = viewingSelf
+    ? sessionUser
+    : otherUser
+      ? {
+          name: otherUser.name,
+          email: otherUser.email,
+          role: otherUser.role,
+          initials: otherUser.initials,
+          organizationName: sessionUser.organizationName,
+          createdAt: otherUser.createdAt,
+        }
+      : null;
 
   function startEditing() {
     setSuccess(null);
     setFormError(null);
     setFields({});
     setValues({
-      name: user?.name ?? "",
+      name: sessionUser?.name ?? "",
       currentPassword: "",
       newPassword: "",
     });
@@ -128,8 +193,9 @@ export function ProfilePage() {
     <DashboardShell
       user={shellUser}
       title="Profile"
+      hideSiteMeta
       actions={
-        editing ? undefined : (
+        viewingSelf && !editing ? (
           <button
             type="button"
             onClick={startEditing}
@@ -137,10 +203,18 @@ export function ProfilePage() {
           >
             Edit
           </button>
-        )
+        ) : undefined
       }
     >
       <div className="max-w-2xl">
+        {otherLoading ? (
+          <p className="text-sm text-muted">Loading profile…</p>
+        ) : otherError ? (
+          <p className="rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
+            {otherError}
+          </p>
+        ) : !profile ? null : (
+          <>
         <p className="mb-5 text-sm text-muted">
           Manage your account details for this organisation.
         </p>
@@ -148,14 +222,14 @@ export function ProfilePage() {
         <section className={panelClass}>
           <div className="flex items-center gap-3 border-b border-edge px-4 py-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-edge-strong bg-fill text-xs font-semibold uppercase text-fg">
-              {user.initials}
+              {profile.initials}
             </div>
             <div className="min-w-0">
-              <h2 className={sectionTitleClass}>{user.name}</h2>
+              <h2 className={sectionTitleClass}>{profile.name}</h2>
               <p className={sectionHintClass}>
-                {user.email}
+                {profile.email}
                 <span className="text-subtle"> · </span>
-                {user.role}
+                {profile.role}
               </p>
             </div>
           </div>
@@ -184,7 +258,6 @@ export function ProfilePage() {
                 <FormField
                   id="profile-name"
                   label="Full name"
-                  hint="Shown in the dashboard and to your organisation."
                   error={fields.name}
                 >
                   <input
@@ -196,20 +269,19 @@ export function ProfilePage() {
                     className={formControlClass(fields.name)}
                   />
                 </FormField>
-                <ReadOnlyField label="Email" value={user.email} />
-                <ReadOnlyField label="Role" value={user.role} />
+                <ReadOnlyField label="Email" value={profile.email} />
+                <ReadOnlyField label="Role" value={profile.role} />
                 <ReadOnlyField
                   label="Organisation"
-                  value={user.organizationName ?? "—"}
+                  value={profile.organizationName ?? "—"}
                 />
                 <ReadOnlyField
                   label="Member since"
-                  value={formatJoined(user.createdAt)}
+                  value={formatJoined(profile.createdAt)}
                 />
                 <FormField
                   id="profile-new-password"
                   label="New password"
-                  hint="Leave blank to keep your current password."
                   error={fields.newPassword}
                 >
                   <div className="relative">
@@ -234,7 +306,6 @@ export function ProfilePage() {
                 <FormField
                   id="profile-current-password"
                   label="Current password"
-                  hint="Required only if you change your password."
                   error={fields.currentPassword}
                 >
                   <div className="relative">
@@ -288,19 +359,20 @@ export function ProfilePage() {
             </form>
           ) : (
             <dl className="divide-y divide-edge">
-              <InfoRow label="Full name" value={user.name} />
-              <InfoRow label="Email" value={user.email} />
-              <InfoRow label="Role" value={user.role} />
+              <InfoRow label="Full name" value={profile.name} />
+              <InfoRow label="Email" value={profile.email} />
+              <InfoRow label="Role" value={profile.role} />
               <InfoRow
                 label="Organisation"
-                value={user.organizationName ?? "—"}
+                value={profile.organizationName ?? "—"}
               />
               <InfoRow label="Password" value="••••••••" />
-              <InfoRow label="Member since" value={formatJoined(user.createdAt)} />
+              <InfoRow label="Member since" value={formatJoined(profile.createdAt)} />
             </dl>
           )}
         </section>
 
+        {viewingSelf ? (
         <section className={`${panelClass} mt-4`}>
           <div className="px-4 py-4">
             <h2 className={sectionTitleClass}>Delete account</h2>
@@ -318,6 +390,9 @@ export function ProfilePage() {
             </button>
           </div>
         </section>
+        ) : null}
+          </>
+        )}
       </div>
 
       {deleteOpen ? (

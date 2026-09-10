@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+import { Link, useNavigate } from "react-router-dom";
+import { Users } from "lucide-react";
+
 import {
   CreateProjectButton,
   Dashboard,
@@ -8,9 +11,11 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { ApiError, getDashboardRequest, type DashboardPayload } from "@/lib/api";
+import { canEditProject } from "@/lib/roles";
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { selectedSite, loading: workspaceLoading } = useWorkspace();
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +55,23 @@ export function DashboardPage() {
     <DashboardShell
       user={shellUser}
       title="Dashboard"
-      actions={<CreateProjectButton />}
+      actions={
+        <div className="flex items-center gap-2">
+          <Link
+            to="/team"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-edge-strong px-3 text-sm text-secondary transition-colors hover:bg-fill hover:text-fg"
+          >
+            <Users className="h-3.5 w-3.5" strokeWidth={1.8} />
+            Team
+          </Link>
+          <CreateProjectButton
+            disabled={!canEditProject(user?.role ?? "")}
+            onClick={() =>
+              void navigate("/projects", { state: { create: true } })
+            }
+          />
+        </div>
+      }
     >
       {loading ? (
         <p className="text-sm text-muted">Loading site overview…</p>

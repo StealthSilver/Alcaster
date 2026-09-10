@@ -1,9 +1,11 @@
 import { isValidObjectId, Types } from "mongoose";
 
+import { DigitalTwinModel } from "../db/models/DigitalTwin.js";
 import { ProjectModel } from "../db/models/Project.js";
 import { SiteModel } from "../db/models/Site.js";
 import { TaskModel } from "../db/models/Task.js";
 import { HttpError } from "../errors.js";
+import { canDeleteProject, canEditProject, isAdmin } from "../lib/roles.js";
 import type {
   CreateProjectInput,
   DashboardKpis,
@@ -15,9 +17,11 @@ import type {
   PublicUser,
   TaskRecord,
   TaskStatus,
+  UpdateProjectInput,
 } from "../types.js";
 import { buildProjectTelemetry } from "./projectTelemetry.js";
 import {
+  assertSiteAccess,
   findSiteForOrg,
   requireOrganizationId,
   seedSitesForOrganization,
@@ -139,6 +143,27 @@ function formatDateLabel(date = new Date()): string {
   });
 }
 
+function requireProjectEditor(user: PublicUser) {
+  if (!canEditProject(user.role)) {
+    throw new HttpError(403, "You do not have permission to edit projects.");
+  }
+}
+
+function requireProjectAdmin(user: PublicUser) {
+  if (!canDeleteProject(user.role)) {
+    throw new HttpError(403, "You do not have permission to delete projects.");
+  }
+}
+
+function duplicateProjectNameError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === 11000
+  );
+}
+
 export async function findProjectForOrg(
   organizationId: string,
   projectId: string,
@@ -162,7 +187,9 @@ export async function getProject(
 ): Promise<ProjectRecord> {
   const organizationId = requireOrganizationId(user);
   const doc = await findProjectForOrg(organizationId, projectId);
-  return toProjectRecord(doc);
+  const project = toProjectRecord(doc);
+  if (project.siteId) assertSiteAccess(user, project.siteId);
+  return project;
 }
 
 export async function getProjectDashboard(
@@ -173,6 +200,7 @@ export async function getProjectDashboard(
   const orgName = user.organizationName ?? "Your organisation";
   const doc = await findProjectForOrg(organizationId, projectId);
   const project = toProjectRecord(doc);
+  if (project.siteId) assertSiteAccess(user, project.siteId);
   const telemetry = buildProjectTelemetry(project);
 
   const taskDocs = await TaskModel.find({
@@ -204,6 +232,7 @@ export async function listProjects(
   const organizationId = requireOrganizationId(user);
   const filter: Record<string, string> = { organizationId };
   if (siteId) {
+    assertSiteAccess(user, siteId);
     await findSiteForOrg(organizationId, siteId);
     filter.siteId = siteId;
   }
@@ -218,7 +247,9 @@ export async function createProject(
   user: PublicUser,
   input: CreateProjectInput,
 ): Promise<ProjectRecord> {
+  requireProjectEditor(user);
   const organizationId = requireOrganizationId(user);
+  assertSiteAccess(user, input.siteId);
   const site = await findSiteForOrg(organizationId, input.siteId);
 
   const existing = await ProjectModel.findOne({
@@ -259,12 +290,7 @@ export async function createProject(
       .lean();
     return toProjectRecord(created ?? doc);
   } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === 11000
-    ) {
+    if (duplicateProjectNameError(error)) {
       throw new HttpError(
         409,
         "A project with this name already exists at this site.",
@@ -273,6 +299,74 @@ export async function createProject(
     }
     throw error;
   }
+}
+
+export async function updateProject(
+  user: PublicUser,
+  projectId: string,
+  input: UpdateProjectInput,
+): Promise<ProjectRecord> {
+  requireProjectEditor(user);
+  const organizationId = requireOrganizationId(user);
+  const doc = await findProjectForOrg(organizationId, projectId);
+  const current = toProjectRecord(doc);
+  if (current.siteId) assertSiteAccess(user, current.siteId);
+
+  const existing = await ProjectModel.findOne({
+    siteId: doc.siteId,
+    name: input.name,
+    _id: { $ne: doc._id },
+  }).lean();
+  if (existing) {
+    throw new HttpError(
+      409,
+      "A project with this name already exists at this site.",
+      { name: "A project with this name already exists at this site." },
+    );
+  }
+
+  doc.name = input.name;
+  doc.location = input.location;
+  doc.type = input.type;
+  doc.status = input.status;
+  doc.capacityMw = input.capacityMw;
+  doc.set("description", input.description);
+
+  try {
+    await doc.save();
+  } catch (error) {
+    if (duplicateProjectNameError(error)) {
+      throw new HttpError(
+        409,
+        "A project with this name already exists at this site.",
+        { name: "A project with this name already exists at this site." },
+      );
+    }
+    throw error;
+  }
+
+  const updated = await ProjectModel.findById(doc._id)
+    .populate("siteId", "name")
+    .lean();
+  return toProjectRecord(updated ?? doc);
+}
+
+export async function deleteProject(user: PublicUser, projectId: string) {
+  requireProjectAdmin(user);
+  const organizationId = requireOrganizationId(user);
+  const doc = await findProjectForOrg(organizationId, projectId);
+  const project = toProjectRecord(doc);
+  if (project.siteId) assertSiteAccess(user, project.siteId);
+
+  await DigitalTwinModel.deleteMany({
+    organizationId,
+    projectId: doc._id,
+  });
+  await TaskModel.deleteMany({
+    organizationId,
+    projectId: doc._id,
+  });
+  await doc.deleteOne();
 }
 
 export async function getDashboard(
@@ -284,9 +378,15 @@ export async function getDashboard(
 
   let siteDoc = null;
   if (siteId) {
+    assertSiteAccess(user, siteId);
     siteDoc = await findSiteForOrg(organizationId, siteId);
-  } else {
+  } else if (isAdmin(user.role)) {
     siteDoc = await SiteModel.findOne({ organizationId }).sort({ name: 1 });
+  } else {
+    const assigned = user.siteIds.find((id) => isValidObjectId(id));
+    siteDoc = assigned
+      ? await SiteModel.findOne({ _id: assigned, organizationId })
+      : null;
   }
 
   if (!siteDoc) {
@@ -326,7 +426,7 @@ export async function getDashboard(
 
   return {
     organization: { id: organizationId, name: orgName },
-    site: toSiteRecord(siteDoc, projectCount),
+    site: toSiteRecord(siteDoc, projectCount, orgName),
     dateLabel: formatDateLabel(),
     kpis: buildKpis(projects),
     projects,
@@ -367,11 +467,14 @@ export async function seedProjectsForOrganization(
   if (count > 0) return;
 
   const karnataka =
-    sites.find((site) => site.location === "Karnataka") ?? fallbackSite;
+    sites.find((site) => site.name.includes("Karnataka") || site.location === "Karnataka") ??
+    fallbackSite;
   const rajasthan =
-    sites.find((site) => site.location === "Rajasthan") ?? fallbackSite;
+    sites.find((site) => site.name.includes("Rajasthan") || site.location === "Rajasthan") ??
+    fallbackSite;
   const gujarat =
-    sites.find((site) => site.location === "Gujarat") ?? fallbackSite;
+    sites.find((site) => site.name.includes("Gujarat") || site.location === "Gujarat") ??
+    fallbackSite;
 
   const seeded = await ProjectModel.insertMany([
     {

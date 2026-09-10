@@ -8,12 +8,16 @@ export function projectHomePath(projectId: string): string {
   return `/projects/${projectId}`;
 }
 
-export function projectTwinPath(projectId: string): string {
-  return `/projects/${projectId}/digital-twin`;
+export function projectTwinPath(projectId: string, assetId?: string | null) {
+  const base = `/projects/${projectId}/digital-twin`;
+  if (!assetId) return base;
+  return `${base}?asset=${encodeURIComponent(assetId)}`;
 }
 
-export function projectSitemapPath(projectId: string): string {
-  return `/projects/${projectId}/sitemap`;
+export function projectSitemapPath(projectId: string, assetId?: string | null) {
+  const base = `/projects/${projectId}/sitemap`;
+  if (!assetId) return base;
+  return `${base}?asset=${encodeURIComponent(assetId)}`;
 }
 
 export function projectScadaPath(projectId: string): string {

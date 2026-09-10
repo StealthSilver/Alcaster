@@ -55,7 +55,7 @@ export function WorkspaceSwitcher({ onNavigate }: WorkspaceSwitcherProps) {
             ? sites.filter(
                 (site) =>
                   site.name.toLowerCase().includes(q) ||
-                  site.location.toLowerCase().includes(q),
+                  site.address.toLowerCase().includes(q),
               )
             : sites;
 

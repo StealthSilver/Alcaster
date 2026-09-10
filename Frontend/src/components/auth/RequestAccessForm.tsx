@@ -5,10 +5,13 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
 import {
+  ACCESS_ROLES,
   validateRequestAccess,
+  type AccessRole,
   type RequestAccessValues,
 } from "@/lib/validation";
 
+import { authButtonClass } from "./authButtonClass";
 import { Field } from "./Field";
 import { inputClass } from "./inputClass";
 
@@ -16,13 +19,16 @@ const emptyValues: RequestAccessValues = {
   fullName: "",
   email: "",
   company: "",
+  role: "Site Manager",
   message: "",
 };
 
 export function RequestAccessForm() {
   const { requestAccess } = useAuth();
   const [values, setValues] = useState<RequestAccessValues>(emptyValues);
-  const [fields, setFields] = useState<Partial<RequestAccessValues>>({});
+  const [fields, setFields] = useState<
+    Partial<Record<keyof RequestAccessValues, string>>
+  >({});
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -73,7 +79,7 @@ export function RequestAccessForm() {
         <p className="mt-2 text-sm leading-relaxed text-muted">{success}</p>
         <Link
           to="/signin"
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover"
+          className={`mt-5 ${authButtonClass} w-auto px-5`}
         >
           Back to Sign In
         </Link>
@@ -82,17 +88,17 @@ export function RequestAccessForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-4">
+    <form onSubmit={onSubmit} noValidate className="space-y-2">
       {formError ? (
         <p
           role="alert"
-          className="rounded-lg border border-danger/25 bg-danger/10 px-3 py-2 text-sm text-danger"
+          className="rounded-lg border border-danger/25 bg-danger/10 px-3 py-1.5 text-sm text-danger"
         >
           {formError}
         </p>
       ) : null}
 
-      <Field id="access-full-name" label="Full Name" error={fields.fullName}>
+      <Field id="access-full-name" label="Full Name" error={fields.fullName} tight>
         <input
           id="access-full-name"
           name="fullName"
@@ -105,11 +111,11 @@ export function RequestAccessForm() {
           aria-describedby={
             fields.fullName ? "access-full-name-error" : undefined
           }
-          className={inputClass(fields.fullName)}
+          className={inputClass(fields.fullName, "h-9")}
         />
       </Field>
 
-      <Field id="access-email" label="Email" error={fields.email}>
+      <Field id="access-email" label="Email" error={fields.email} tight>
         <input
           id="access-email"
           name="email"
@@ -120,11 +126,11 @@ export function RequestAccessForm() {
           onChange={(event) => update("email", event.target.value)}
           aria-invalid={Boolean(fields.email)}
           aria-describedby={fields.email ? "access-email-error" : undefined}
-          className={inputClass(fields.email)}
+          className={inputClass(fields.email, "h-9")}
         />
       </Field>
 
-      <Field id="access-company" label="Company" error={fields.company}>
+      <Field id="access-company" label="Company" error={fields.company} tight>
         <input
           id="access-company"
           name="company"
@@ -135,15 +141,33 @@ export function RequestAccessForm() {
           onChange={(event) => update("company", event.target.value)}
           aria-invalid={Boolean(fields.company)}
           aria-describedby={fields.company ? "access-company-error" : undefined}
-          className={inputClass(fields.company)}
+          className={inputClass(fields.company, "h-9")}
         />
       </Field>
 
-      <Field id="access-message" label="Message" error={fields.message}>
+      <Field id="access-role" label="Role" error={fields.role} tight>
+        <select
+          id="access-role"
+          name="role"
+          value={values.role}
+          onChange={(event) => update("role", event.target.value as AccessRole)}
+          aria-invalid={Boolean(fields.role)}
+          aria-describedby={fields.role ? "access-role-error" : undefined}
+          className={inputClass(fields.role, "h-9")}
+        >
+          {ACCESS_ROLES.map((role) => (
+            <option key={role} value={role}>
+              {role}
+            </option>
+          ))}
+        </select>
+      </Field>
+
+      <Field id="access-message" label="Message" error={fields.message} tight>
         <textarea
           id="access-message"
           name="message"
-          rows={4}
+          rows={2}
           placeholder="Tell us why you need access..."
           value={values.message}
           onChange={(event) => update("message", event.target.value)}
@@ -151,14 +175,14 @@ export function RequestAccessForm() {
           aria-describedby={
             fields.message ? "access-message-error" : undefined
           }
-          className={inputClass(fields.message, "h-auto min-h-[110px] py-3")}
+          className={inputClass(fields.message, "h-auto min-h-[52px] resize-none py-1.5")}
         />
       </Field>
 
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className={authButtonClass}
       >
         {submitting ? (
           <>

@@ -36,9 +36,10 @@ function projectGroups(base: string): NavGroup[] {
       id: "plant",
       label: "Plant",
       items: [
+        { href: `${base}/scada`, label: "SCADA", Icon: Gauge },
         { href: `${base}/digital-twin`, label: "Digital twin", Icon: Box },
         { href: `${base}/sitemap`, label: "Sitemap", Icon: Map },
-        { href: `${base}/scada`, label: "SCADA", Icon: Gauge },
+        { href: `${base}/analytics`, label: "Analytics", Icon: Activity },
         { href: `${base}/monitoring`, label: "Monitoring", Icon: Radio },
       ],
     },
@@ -46,7 +47,6 @@ function projectGroups(base: string): NavGroup[] {
       id: "insights",
       label: "Insights",
       items: [
-        { href: `${base}/analytics`, label: "Analytics", Icon: Activity },
         { href: `${base}/forecasting`, label: "Forecasting", Icon: LineChart },
       ],
     },

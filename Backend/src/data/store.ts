@@ -6,7 +6,7 @@ import { OrganizationModel } from "../db/models/Organization.js";
 import { UserModel } from "../db/models/User.js";
 import { hashPassword } from "../lib/crypto.js";
 import { seedProjectsForOrganization } from "../services/projects.js";
-import type { AccessRequestRecord, RequestAccessInput, UserRecord } from "../types.js";
+import type { AccessRequestRecord, AccessRole, RequestAccessInput, UserRecord } from "../types.js";
 
 let dummyPasswordHash = "";
 
@@ -37,12 +37,30 @@ function organizationFrom(value: unknown): {
   };
 }
 
+function idsFrom(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item) return "";
+      if (typeof item === "string") return item;
+      if (typeof item === "object" && "toString" in item) {
+        return String(item.toString());
+      }
+      return "";
+    })
+    .filter(Boolean);
+}
+
 function toUserRecord(doc: {
   _id: { toString(): string };
   name: string;
   email: string;
   role: string;
   passwordHash: string;
+  gender?: string;
+  designation?: string;
+  company?: string;
+  siteIds?: unknown;
   organizationId?: unknown;
   createdAt?: Date;
 }): UserRecord {
@@ -53,6 +71,10 @@ function toUserRecord(doc: {
     email: doc.email,
     role: doc.role,
     passwordHash: doc.passwordHash,
+    gender: doc.gender ?? "",
+    designation: doc.designation ?? "",
+    company: doc.company ?? "",
+    siteIds: idsFrom(doc.siteIds),
     organizationId: org.organizationId,
     organizationName: org.organizationName,
     createdAt: (doc.createdAt ?? new Date()).toISOString(),
@@ -64,6 +86,7 @@ function toAccessRequestRecord(doc: {
   fullName: string;
   email: string;
   company: string;
+  role?: string;
   message: string;
   createdAt?: Date;
 }): AccessRequestRecord {
@@ -72,6 +95,7 @@ function toAccessRequestRecord(doc: {
     fullName: doc.fullName,
     email: doc.email,
     company: doc.company,
+    role: (doc.role as AccessRole | undefined) ?? "Site Manager",
     message: doc.message,
     createdAt: (doc.createdAt ?? new Date()).toISOString(),
   };
@@ -129,6 +153,7 @@ export async function createAccessRequest(
     fullName: input.fullName,
     email: input.email,
     company: input.company,
+    role: input.role,
     message: input.message,
   });
   return toAccessRequestRecord(doc);

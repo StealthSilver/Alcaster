@@ -6,6 +6,7 @@ export type PublicUser = {
   initials: string;
   organizationId: string | null;
   organizationName: string | null;
+  siteIds: string[];
   createdAt: string | null;
 };
 
@@ -15,16 +16,76 @@ export type UserRecord = {
   email: string;
   role: string;
   passwordHash: string;
+  gender: string;
+  designation: string;
+  company: string;
+  siteIds: string[];
   organizationId: string | null;
   organizationName: string | null;
   createdAt: string;
 };
+
+export const ACCESS_ROLES = [
+  "Admin",
+  "Site Manager",
+  "Site Engineer",
+  "Developer",
+] as const;
+
+export const GENDERS = ["Male", "Female", "Other"] as const;
+
+export type Gender = (typeof GENDERS)[number];
+
+export type TeamMemberSite = {
+  id: string;
+  name: string;
+  type: SiteType;
+};
+
+export type TeamMemberRecord = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  gender: string;
+  designation: string;
+  company: string;
+  siteIds: string[];
+  sites: TeamMemberSite[];
+  initials: string;
+  createdAt: string;
+};
+
+export type CreateTeamMemberInput = {
+  name: string;
+  email: string;
+  password: string;
+  role: AccessRole;
+  gender: Gender;
+  designation: string;
+  company: string;
+  siteIds: string[];
+};
+
+export type UpdateTeamMemberInput = {
+  name: string;
+  email: string;
+  password: string;
+  role: AccessRole | string;
+  gender: Gender;
+  designation: string;
+  company: string;
+  siteIds: string[];
+};
+
+export type AccessRole = (typeof ACCESS_ROLES)[number];
 
 export type AccessRequestRecord = {
   id: string;
   fullName: string;
   email: string;
   company: string;
+  role: AccessRole;
   message: string;
   createdAt: string;
 };
@@ -38,6 +99,7 @@ export type RequestAccessInput = {
   fullName: string;
   email: string;
   company: string;
+  role: AccessRole;
   message: string;
 };
 
@@ -53,16 +115,20 @@ export type DeleteAccountInput = {
 
 export type ProjectType = "solar" | "wind" | "hybrid" | "bess";
 export type ProjectStatus = "active" | "pending" | "on_hold" | "completed";
-export type SiteStatus = "active" | "pending" | "on_hold";
+export type SiteType = "solar" | "wind" | "bess" | "hybrid";
+export type SiteStatus = "active" | "inactive";
 export type TaskStatus = "open" | "in_progress" | "completed";
 
 export type SiteRecord = {
   id: string;
   organizationId: string;
+  organizationName: string;
   name: string;
-  location: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  type: SiteType;
   status: SiteStatus;
-  description: string;
   projectCount: number;
   createdBy: string;
   createdAt: string;
@@ -71,10 +137,14 @@ export type SiteRecord = {
 
 export type CreateSiteInput = {
   name: string;
-  location: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  type: SiteType;
   status: SiteStatus;
-  description: string;
 };
+
+export type UpdateSiteInput = CreateSiteInput;
 
 export type ProjectRecord = {
   id: string;
@@ -94,6 +164,15 @@ export type ProjectRecord = {
 
 export type CreateProjectInput = {
   siteId: string;
+  name: string;
+  location: string;
+  type: ProjectType;
+  status: ProjectStatus;
+  capacityMw: number;
+  description: string;
+};
+
+export type UpdateProjectInput = {
   name: string;
   location: string;
   type: ProjectType;
@@ -207,6 +286,7 @@ export type TwinSpec = {
   includeWeatherStation: boolean;
   includeFence: boolean;
   includeRoads: boolean;
+  intake?: Record<string, string>;
 };
 
 export type TwinDerived = {

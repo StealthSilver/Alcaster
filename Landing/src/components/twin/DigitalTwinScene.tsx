@@ -43,15 +43,6 @@ export function DigitalTwinScene({
         className,
       )}
     >
-      <div className="pointer-events-none absolute inset-0 alcaster-grid opacity-60" />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 50% at 55% 40%, rgba(230,116,10,0.09), transparent 70%)",
-        }}
-      />
-
       <motion.div
         className={cn(
           "relative flex flex-1 items-center justify-center px-2 py-4 sm:px-3 sm:py-6",
