@@ -8,10 +8,17 @@ export function projectHomePath(projectId: string): string {
   return `/projects/${projectId}`;
 }
 
-export function projectTwinPath(projectId: string, assetId?: string | null) {
+export function projectTwinPath(
+  projectId: string,
+  assetId?: string | null,
+  historyIso?: string | null,
+) {
   const base = `/projects/${projectId}/digital-twin`;
-  if (!assetId) return base;
-  return `${base}?asset=${encodeURIComponent(assetId)}`;
+  const params = new URLSearchParams();
+  if (assetId) params.set("asset", assetId);
+  if (historyIso) params.set("history", historyIso);
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
 }
 
 export function projectSitemapPath(projectId: string, assetId?: string | null) {

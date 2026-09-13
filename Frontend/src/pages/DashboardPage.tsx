@@ -24,6 +24,7 @@ export function DashboardPage() {
   useEffect(() => {
     if (workspaceLoading) return;
     let cancelled = false;
+    setLoading(true);
     getDashboardRequest(selectedSite?.id)
       .then((payload) => {
         if (!cancelled) {
@@ -51,10 +52,14 @@ export function DashboardPage() {
     ? { name: user.name, role: user.role, initials: user.initials }
     : { name: "User", role: "Organization Manager", initials: "U" };
 
+  const title = selectedSite
+    ? `${selectedSite.name} / Site dashboard`
+    : "Site dashboard";
+
   return (
     <DashboardShell
       user={shellUser}
-      title="Dashboard"
+      title={title}
       actions={
         <div className="flex items-center gap-2">
           <Link
@@ -74,7 +79,7 @@ export function DashboardPage() {
       }
     >
       {loading ? (
-        <p className="text-sm text-muted">Loading site overview…</p>
+        <p className="text-sm text-muted">Loading site portfolio…</p>
       ) : error ? (
         <p className="rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}

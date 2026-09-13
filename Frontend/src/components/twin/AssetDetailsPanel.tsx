@@ -72,6 +72,18 @@ type AssetDetailsPanelProps = {
   telemetryConnection?: TelemetryConnectionState;
   /** Phase 5 condition / inspection bundle */
   conditionState?: ConditionStoreState | null;
+  /** Phase 6 — when set, panel shows historical timestamp context */
+  historicalMode?: boolean;
+  historicalTimestamp?: string | null;
+  historicalStatusLabel?: string | null;
+  historicalCondition?: { condition: string; score?: number } | null;
+  historicalMaintenanceActive?: boolean;
+  historicalEvents?: Array<{
+    timestamp: string;
+    type: string;
+    title: string;
+  }>;
+  onViewHistory?: (assetId: string) => void;
   onAddInspection?: (input: {
     assetId: string;
     inspectionType: InspectionType;
@@ -93,6 +105,13 @@ export function AssetDetailsPanel({
   telemetry = null,
   telemetryConnection,
   conditionState = null,
+  historicalMode = false,
+  historicalTimestamp = null,
+  historicalStatusLabel = null,
+  historicalCondition = null,
+  historicalMaintenanceActive = false,
+  historicalEvents = [],
+  onViewHistory,
   onAddInspection,
 }: AssetDetailsPanelProps) {
   const [query, setQuery] = useState("");
@@ -248,21 +267,31 @@ export function AssetDetailsPanel({
               <span
                 className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em]"
                 style={{
-                  color: telemetry
-                    ? OPERATIONAL_STATUS_COLOR[telemetry.status] ??
-                      statusColor[operationalToAssetStatus(telemetry.status)]
-                    : statusColor[asset.status],
-                  background: `${
-                    telemetry
+                  color: historicalStatusLabel
+                    ? OPERATIONAL_STATUS_COLOR[historicalStatusLabel] ??
+                      (telemetry
+                        ? OPERATIONAL_STATUS_COLOR[telemetry.status]
+                        : statusColor[asset.status])
+                    : telemetry
                       ? OPERATIONAL_STATUS_COLOR[telemetry.status] ??
                         statusColor[operationalToAssetStatus(telemetry.status)]
-                      : statusColor[asset.status]
+                      : statusColor[asset.status],
+                  background: `${
+                    historicalStatusLabel
+                      ? OPERATIONAL_STATUS_COLOR[historicalStatusLabel] ??
+                        "#7c8db5"
+                      : telemetry
+                        ? OPERATIONAL_STATUS_COLOR[telemetry.status] ??
+                          statusColor[operationalToAssetStatus(telemetry.status)]
+                        : statusColor[asset.status]
                   }22`,
                 }}
               >
-                {telemetry
-                  ? operationalStatusLabel(telemetry.status)
-                  : asset.status}
+                {historicalStatusLabel
+                  ? operationalStatusLabel(historicalStatusLabel)
+                  : telemetry
+                    ? operationalStatusLabel(telemetry.status)
+                    : asset.status}
               </span>
               <button
                 type="button"
@@ -289,11 +318,46 @@ export function AssetDetailsPanel({
           ))}
         </dl>
 
+        {asset && historicalMode && historicalTimestamp ? (
+          <div className="mt-3 border-t border-edge pt-2">
+            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-accent">
+              Historical timestamp
+            </p>
+            <p className="text-[11px] tabular-nums text-fg">
+              {formatClock(historicalTimestamp)}
+            </p>
+            <p className="text-[10px] text-muted">
+              {new Date(historicalTimestamp).toLocaleDateString(undefined, {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+            {historicalCondition ? (
+              <p className="mt-1.5 text-[11px] text-muted">
+                Condition{" "}
+                <span className="font-medium text-fg">
+                  {historicalCondition.condition}
+                  {historicalCondition.score != null
+                    ? ` · ${historicalCondition.score}/100`
+                    : ""}
+                </span>
+              </p>
+            ) : null}
+            <p className="mt-1 text-[11px] text-muted">
+              Maintenance{" "}
+              <span className="font-medium text-fg">
+                {historicalMaintenanceActive ? "Active" : "Not active"}
+              </span>
+            </p>
+          </div>
+        ) : null}
+
         {asset && telemetry ? (
           <div className="mt-3 border-t border-edge pt-2">
             <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.12em] text-accent">
               <Activity className="h-3 w-3" />
-              Live
+              {historicalMode ? "At timestamp" : "Live"}
             </p>
             <dl className="space-y-1.5 text-[11px]">
               {liveTelemetryRows(telemetry).map((row) => (
@@ -310,14 +374,51 @@ export function AssetDetailsPanel({
             </dl>
             <p className="mt-2 text-[10px] text-muted">
               Telemetry {telemetry.quality}
-              {telemetryConnection === "simulated"
-                ? " · Simulated"
-                : telemetryConnection
-                  ? ` · ${telemetryConnection}`
-                  : ""}
-              {" · "}
-              {formatRelativeAge(telemetry.timestamp)}
+              {historicalMode
+                ? " · Simulated historical"
+                : telemetryConnection === "simulated"
+                  ? " · Simulated"
+                  : telemetryConnection
+                    ? ` · ${telemetryConnection}`
+                    : ""}
+              {!historicalMode ? (
+                <>
+                  {" · "}
+                  {formatRelativeAge(telemetry.timestamp)}
+                </>
+              ) : null}
             </p>
+          </div>
+        ) : null}
+
+        {asset && historicalMode && historicalEvents.length > 0 ? (
+          <div className="mt-3 border-t border-edge pt-2">
+            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-muted">
+              Asset lifecycle
+            </p>
+            <ol className="max-h-28 space-y-1 overflow-y-auto text-[10px] text-muted">
+              {historicalEvents.map((event, index) => (
+                <li key={`${event.type}-${event.timestamp}-${index}`}>
+                  <span className="font-medium text-fg">{event.type}</span>
+                  {" · "}
+                  {formatClock(event.timestamp)}
+                  {" — "}
+                  {event.title}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
+
+        {asset && !historicalMode && onViewHistory ? (
+          <div className="mt-3 border-t border-edge pt-2">
+            <button
+              type="button"
+              onClick={() => onViewHistory(asset.assetId)}
+              className="w-full rounded-md border border-edge-strong px-2 py-1.5 text-[11px] font-medium text-secondary hover:bg-fill hover:text-fg"
+            >
+              View history
+            </button>
           </div>
         ) : null}
 

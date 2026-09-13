@@ -207,6 +207,18 @@ export type DashboardPayload = {
   kpis: DashboardKpis;
   projects: ProjectRecord[];
   recentTasks: TaskRecord[];
+  /** Site-level monitoring — CMS dashboard parity */
+  monitoring: {
+    kpis: ProjectDashboardKpis;
+    generationSeries: GenerationPoint[];
+    weather: WeatherConditions;
+    alerts: OperationalAlert[];
+    activity: ActivityItem[];
+    plants: Array<{
+      project: ProjectRecord;
+      kpis: ProjectDashboardKpis;
+    }>;
+  };
 };
 
 export type ProjectDashboardKpis = {

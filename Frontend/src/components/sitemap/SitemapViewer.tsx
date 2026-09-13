@@ -22,6 +22,7 @@ import { SitemapTree } from "@/components/sitemap/SitemapTree";
 import { SingleLineDiagramCanvas } from "@/components/sitemap/SingleLineDiagram";
 import { useAssetSelection } from "@/hooks/useAssetSelection";
 import { useConditionTwin } from "@/hooks/useConditionTwin";
+import { useHistoricalTwin } from "@/hooks/useHistoricalTwin";
 import { useLiveTelemetry } from "@/hooks/useLiveTelemetry";
 import { usePanelFullscreen } from "@/hooks/usePanelFullscreen";
 import type { TwinRecord } from "@/lib/api";
@@ -75,7 +76,12 @@ const VIEW_SCALE: Record<ViewMode, number> = {
 
 export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   const model = useMemo(() => buildSitemapModel(twin), [twin]);
-  const { state: telemetry } = useLiveTelemetry(twin, model.assets, true);
+  const { state: liveTelemetry } = useLiveTelemetry(twin, model.assets, true);
+  const { state: history } = useHistoricalTwin(twin, model.assets, true);
+  const telemetry =
+    history.isHistorical && history.telemetry
+      ? history.telemetry
+      : liveTelemetry;
   const { state: condition, controls: conditionControls } = useConditionTwin(
     twin,
     model.assets,
@@ -289,11 +295,13 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
               {plantName}
             </p>
             <p className="mt-0.5 text-[11px] text-muted">
-              {view === "map"
-                ? "Click a component to select its asset"
-                : view === "sld"
-                  ? "Data-driven single-line diagram"
-                  : "Expand folders · select a node for details"}
+              {history.isHistorical
+                ? "Historical state · synced with Digital Twin timeline"
+                : view === "map"
+                  ? "Click a component to select its asset"
+                  : view === "sld"
+                    ? "Data-driven single-line diagram"
+                    : "Expand folders · select a node for details"}
             </p>
           </div>
           {view === "tree" ? (
@@ -438,7 +446,24 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
             }
             telemetryConnection={telemetry.connection}
             conditionState={condition}
+            historicalMode={history.isHistorical}
+            historicalTimestamp={
+              history.isHistorical ? history.timestamp : null
+            }
+            historicalStatusLabel={
+              history.isHistorical && selectedDetailId
+                ? history.snapshot?.assets.find(
+                    (a) => a.assetId === selectedDetailId,
+                  )?.operationalStatus ?? null
+                : null
+            }
             onAddInspection={(input) => {
+              if (history.isHistorical) {
+                return {
+                  ok: false,
+                  error: "Inspections are read-only in historical mode",
+                };
+              }
               const result = conditionControls.addInspection(input);
               return result.ok
                 ? { ok: true }

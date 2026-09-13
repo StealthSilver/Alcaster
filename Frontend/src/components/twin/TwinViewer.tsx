@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Box, Maximize2, Minimize2, Zap } from "lucide-react";
+import { Box, History, Maximize2, Minimize2, Zap } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { iconButtonClass } from "@/components/dashboard/panel";
@@ -9,6 +9,7 @@ import {
   conditionMapFromStore,
   useConditionTwin,
 } from "@/hooks/useConditionTwin";
+import { useHistoricalTwin } from "@/hooks/useHistoricalTwin";
 import {
   statusMapFromTelemetry,
   useLiveTelemetry,
@@ -17,6 +18,8 @@ import { usePanelFullscreen } from "@/hooks/usePanelFullscreen";
 import type { TwinRecord } from "@/lib/api";
 import type { ElectricalPath } from "@/lib/electricalModel";
 import { environmentFromWeatherTelemetry } from "@/lib/environmentModel";
+import { parseHistoryParam } from "@/lib/historyModel";
+import { activeMaintenanceAt } from "@/lib/maintenanceModel";
 import { buildPlantTwinModel } from "@/lib/plantTwin";
 import { activeAlarms, type AssetOperationalStatus } from "@/lib/telemetry";
 
@@ -26,6 +29,7 @@ import {
   type ConditionFilter,
   type TwinOverlayMode,
 } from "./ConditionHud";
+import { HistoryTimelineBar } from "./HistoryTimelineBar";
 import { LivePlantHud, type StatusFilter } from "./LivePlantHud";
 import { TwinCanvas } from "./TwinCanvas";
 
@@ -76,66 +80,114 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   const [conditionFilter, setConditionFilter] =
     useState<ConditionFilter>("all");
   const [overlay, setOverlay] = useState<TwinOverlayMode>("plant");
-  const { state: telemetry, controls: telemetryControls } = useLiveTelemetry(
+  const { state: liveTelemetry, controls: telemetryControls } = useLiveTelemetry(
     twin,
     assets,
     true,
   );
+  const {
+    state: history,
+    controls: historyControls,
+    statusByAssetId: historicalStatusMap,
+    conditionByAssetId: historicalConditionMap,
+  } = useHistoricalTwin(twin, assets, true);
+  const isHistorical = history.isHistorical;
+
+  // Freeze live telemetry while browsing history so it cannot overwrite the view.
+  useEffect(() => {
+    if (isHistorical) {
+      telemetryControls.setPaused(true);
+    } else {
+      telemetryControls.setPaused(false);
+    }
+  }, [isHistorical, telemetryControls]);
+
   const { state: condition, controls: conditionControls } = useConditionTwin(
     twin,
     assets,
     true,
   );
-  const statusByAssetId = useMemo(
-    () => statusMapFromTelemetry(telemetry),
-    [telemetry],
-  );
-  const conditionByAssetId = useMemo(
-    () => conditionMapFromStore(condition),
-    [condition],
-  );
+
+  const displayTelemetry = useMemo(() => {
+    if (isHistorical && history.telemetry) return history.telemetry;
+    return liveTelemetry;
+  }, [isHistorical, history.telemetry, liveTelemetry]);
+
+  const statusByAssetId = useMemo(() => {
+    if (isHistorical) return historicalStatusMap;
+    return statusMapFromTelemetry(liveTelemetry);
+  }, [isHistorical, historicalStatusMap, liveTelemetry]);
+
+  const conditionByAssetId = useMemo(() => {
+    if (isHistorical && Object.keys(historicalConditionMap).length > 0) {
+      return historicalConditionMap;
+    }
+    return conditionMapFromStore(condition);
+  }, [isHistorical, historicalConditionMap, condition]);
+
   const defectAssetIds = useMemo(
     () => assetsWithOpenDefects(condition),
     [condition],
   );
   const mergedTelemetry = useMemo(() => {
+    const inspectionAlarms = isHistorical ? [] : condition.alarms;
     const alarms = [
-      ...telemetry.alarms.map((a) => ({
+      ...displayTelemetry.alarms.map((a) => ({
         ...a,
         source: a.source ?? ("TELEMETRY" as const),
       })),
-      ...condition.alarms,
+      ...inspectionAlarms,
     ];
     return {
-      ...telemetry,
+      ...displayTelemetry,
       alarms,
       plant: {
-        ...telemetry.plant,
+        ...displayTelemetry.plant,
         activeAlarmCount: activeAlarms(alarms).length,
       },
     };
-  }, [telemetry, condition.alarms]);
+  }, [displayTelemetry, condition.alarms, isHistorical]);
 
   const environment = useMemo(() => {
+    if (isHistorical && history.snapshot?.weather) {
+      const w = history.snapshot.weather;
+      return environmentFromWeatherTelemetry(
+        {
+          irradiance: w.ghi,
+          poaIrradiance: w.poaIrradiance,
+          temperature: w.ambientTemperature,
+          moduleTemperature: w.moduleTemperature,
+          windSpeed: w.windSpeed,
+          windDirection: w.windDirection,
+          humidity: w.humidity,
+        },
+        {
+          cloudCover: w.cloudCover ?? 0,
+          rainfall: w.rainfall ?? 0,
+          atmosphericPressure: 1013,
+        },
+        w.timestamp,
+      );
+    }
     const weatherId = assets.order.find(
       (id) => assets.assets[id]?.assetType === "WEATHER_STATION",
     );
-    const snap = weatherId ? telemetry.byAssetId[weatherId] : null;
+    const snap = weatherId ? displayTelemetry.byAssetId[weatherId] : null;
     if (!snap) {
       return environmentFromWeatherTelemetry(
         {
-          irradiance: telemetry.plant.irradianceWm2,
-          temperature: telemetry.plant.ambientTempC,
-          windSpeed: telemetry.plant.windSpeedMs,
+          irradiance: displayTelemetry.plant.irradianceWm2,
+          temperature: displayTelemetry.plant.ambientTempC,
+          windSpeed: displayTelemetry.plant.windSpeedMs,
         },
         {
           cloudCover: Math.max(
             0,
-            Math.min(100, 100 - telemetry.plant.irradianceWm2 / 10),
+            Math.min(100, 100 - displayTelemetry.plant.irradianceWm2 / 10),
           ),
           rainfall: 0,
         },
-        telemetry.plant.timestamp,
+        displayTelemetry.plant.timestamp,
       );
     }
     return environmentFromWeatherTelemetry(
@@ -150,15 +202,21 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
       },
       snap.timestamp,
     );
-  }, [assets, telemetry]);
+  }, [assets, displayTelemetry, isHistorical, history.snapshot]);
 
   const filteredHighlightIds = useMemo(() => {
     if (statusFilter !== "all") {
       const set = new Set<string>();
-      for (const [id, snap] of Object.entries(telemetry.byAssetId)) {
-        const status = snap.status as AssetOperationalStatus;
+      for (const [id, statusRaw] of Object.entries(statusByAssetId)) {
+        const status = statusRaw as AssetOperationalStatus | "MAINTENANCE";
         if (statusFilter === "OFFLINE") {
-          if (status === "OFFLINE" || status === "UNKNOWN") set.add(id);
+          if (
+            status === "OFFLINE" ||
+            status === "UNKNOWN" ||
+            status === "MAINTENANCE"
+          ) {
+            set.add(id);
+          }
         } else if (status === statusFilter) {
           set.add(id);
         }
@@ -173,12 +231,8 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
       return set;
     }
     return null;
-  }, [
-    statusFilter,
-    conditionFilter,
-    telemetry.byAssetId,
-    conditionByAssetId,
-  ]);
+  }, [statusFilter, conditionFilter, statusByAssetId, conditionByAssetId]);
+
   const {
     ref: fullscreenRef,
     active: fullscreen,
@@ -188,18 +242,29 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   useEffect(() => {
     if (hydratedUrl.current) return;
     const fromUrl = searchParams.get("asset");
-    if (!fromUrl) {
+    const historyParam = parseHistoryParam(searchParams.get("history"));
+    if (!fromUrl && !historyParam) {
       hydratedUrl.current = true;
       return;
     }
-    if (assets.assets[fromUrl]) {
+    if (fromUrl && assets.assets[fromUrl]) {
       selectAsset(fromUrl, { source: "external", focus3d: true });
-      hydratedUrl.current = true;
-      const next = new URLSearchParams(searchParams);
-      next.delete("asset");
-      setSearchParams(next, { replace: true });
     }
-  }, [assets.assets, searchParams, selectAsset, setSearchParams]);
+    if (historyParam) {
+      void historyControls.enterHistorical(historyParam);
+    }
+    hydratedUrl.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete("asset");
+    next.delete("history");
+    setSearchParams(next, { replace: true });
+  }, [
+    assets.assets,
+    searchParams,
+    selectAsset,
+    setSearchParams,
+    historyControls,
+  ]);
 
   useEffect(() => {
     setTracedPath(null);
@@ -211,6 +276,24 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   }, [tracedPath, filteredHighlightIds]);
 
   const electrical = assets.electrical;
+
+  const selectedHistoricalAsset = useMemo(() => {
+    if (!isHistorical || !history.snapshot || !selectedAssetId) return null;
+    return (
+      history.snapshot.assets.find((a) => a.assetId === selectedAssetId) ?? null
+    );
+  }, [isHistorical, history.snapshot, selectedAssetId]);
+
+  const selectedMaintenanceActive = useMemo(() => {
+    if (!isHistorical || !history.snapshot || !selectedAssetId) return false;
+    return (
+      activeMaintenanceAt(
+        history.snapshot.maintenance,
+        history.timestamp,
+        selectedAssetId,
+      ).length > 0
+    );
+  }, [isHistorical, history.snapshot, history.timestamp, selectedAssetId]);
 
   return (
     <div
@@ -245,7 +328,13 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
       </div>
 
       <div className="pointer-events-none absolute inset-0">
-        <div className="pointer-events-auto absolute left-3 top-3 max-h-[calc(100%-5rem)] max-w-[240px] space-y-2 overflow-y-auto overscroll-contain sm:left-4 sm:top-4">
+        <div
+          className={`pointer-events-auto absolute left-3 top-3 max-w-[240px] space-y-2 overflow-y-auto overscroll-contain sm:left-4 sm:top-4 ${
+            isHistorical
+              ? "max-h-[calc(100%-14rem)]"
+              : "max-h-[calc(100%-5rem)]"
+          }`}
+        >
           <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
             <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
               <Box className="h-3 w-3" />
@@ -262,6 +351,21 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
                   ? "Fixed tilt"
                   : "Single-axis"}{" "}
               · {intake?.moduleRatedPowerW || spec.moduleWattageW} W
+            </p>
+            <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em]">
+              {isHistorical ? (
+                <span className="text-[#e6740a]">Historical</span>
+              ) : (
+                <>
+                  <span
+                    className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--alcaster-success)]"
+                    aria-hidden
+                  />
+                  <span className="text-[color:var(--alcaster-success)]">
+                    Live
+                  </span>
+                </>
+              )}
             </p>
           </div>
           <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
@@ -281,7 +385,9 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
               />
               <Row
                 label="Strings"
-                value={(electrical?.counts.strings ?? assets.counts.strings).toLocaleString()}
+                value={(
+                  electrical?.counts.strings ?? assets.counts.strings
+                ).toLocaleString()}
               />
               <Row
                 label="Inverters"
@@ -316,30 +422,62 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
               </button>
             </div>
           </div>
-          <LivePlantHud
-            state={mergedTelemetry}
-            selectedAssetId={selectedAssetId}
-            statusFilter={statusFilter}
-            onStatusFilter={(filter) => {
-              setStatusFilter(filter);
-              if (filter !== "all") setConditionFilter("all");
-            }}
-            onSelectAsset={(assetId, options) =>
-              selectAsset(assetId, {
-                source: "search",
-                focus3d: options?.focus3d ?? true,
-              })
-            }
-            onScenario={(scenario) => telemetryControls.setScenario(scenario)}
-            onPauseToggle={() =>
-              telemetryControls.setPaused(!telemetry.paused)
-            }
-            onReset={() => telemetryControls.resetSimulation()}
-            onForceSelected={(condition) => {
-              if (!selectedAssetId) return;
-              telemetryControls.forceAssetCondition(selectedAssetId, condition);
-            }}
-          />
+          {!isHistorical ? (
+            <LivePlantHud
+              state={mergedTelemetry}
+              selectedAssetId={selectedAssetId}
+              statusFilter={statusFilter}
+              onStatusFilter={(filter) => {
+                setStatusFilter(filter);
+                if (filter !== "all") setConditionFilter("all");
+              }}
+              onSelectAsset={(assetId, options) =>
+                selectAsset(assetId, {
+                  source: "search",
+                  focus3d: options?.focus3d ?? true,
+                })
+              }
+              onScenario={(scenario) => telemetryControls.setScenario(scenario)}
+              onPauseToggle={() =>
+                telemetryControls.setPaused(!liveTelemetry.paused)
+              }
+              onReset={() => telemetryControls.resetSimulation()}
+              onForceSelected={(forceCondition) => {
+                if (!selectedAssetId) return;
+                telemetryControls.forceAssetCondition(
+                  selectedAssetId,
+                  forceCondition,
+                );
+              }}
+            />
+          ) : (
+            <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
+              <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#e6740a]">
+                Historical KPIs
+              </p>
+              <p className="mt-1 text-[10px] text-muted">
+                {history.label} · Live telemetry frozen
+              </p>
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                <Row
+                  label="Power"
+                  value={`${(mergedTelemetry.plant.currentPowerKw / 1000).toFixed(2)} MW`}
+                />
+                <Row
+                  label="Availability"
+                  value={`${mergedTelemetry.plant.availabilityPct.toFixed(1)}%`}
+                />
+                <Row
+                  label="Alarms"
+                  value={String(mergedTelemetry.plant.activeAlarmCount)}
+                />
+                <Row
+                  label="Health"
+                  value={mergedTelemetry.plant.health}
+                />
+              </dl>
+            </div>
+          )}
           <ConditionHud
             state={condition}
             overlay={overlay}
@@ -359,20 +497,46 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
           />
         </div>
 
-        <div className="pointer-events-auto absolute right-3 top-3 flex max-h-[calc(100%-5rem)] flex-col items-end gap-2 overflow-y-auto overscroll-contain sm:right-4 sm:top-4">
-          <button
-            type="button"
-            onClick={() => void toggleFullscreen()}
-            className={`${iconButtonClass} bg-page/90 backdrop-blur-sm`}
-            title={fullscreen ? "Exit full screen" : "Full screen"}
-            aria-label={fullscreen ? "Exit full screen" : "Full screen"}
-          >
-            {fullscreen ? (
-              <Minimize2 className="h-3.5 w-3.5" />
+        <div
+          className={`pointer-events-auto absolute right-3 top-3 flex flex-col items-end gap-2 overflow-y-auto overscroll-contain sm:right-4 sm:top-4 ${
+            isHistorical
+              ? "max-h-[calc(100%-14rem)]"
+              : "max-h-[calc(100%-5rem)]"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {isHistorical ? (
+              <button
+                type="button"
+                onClick={() => historyControls.exitHistorical()}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-edge-strong bg-page/90 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-fg backdrop-blur-sm hover:bg-fill"
+              >
+                Live
+              </button>
             ) : (
-              <Maximize2 className="h-3.5 w-3.5" />
+              <button
+                type="button"
+                onClick={() => void historyControls.enterHistorical()}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-edge-strong bg-page/90 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-fg backdrop-blur-sm hover:bg-fill"
+              >
+                <History className="h-3.5 w-3.5" />
+                History
+              </button>
             )}
-          </button>
+            <button
+              type="button"
+              onClick={() => void toggleFullscreen()}
+              className={`${iconButtonClass} bg-page/90 backdrop-blur-sm`}
+              title={fullscreen ? "Exit full screen" : "Full screen"}
+              aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+            >
+              {fullscreen ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
 
           <AssetDetailsPanel
             model={assets}
@@ -380,12 +544,47 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
             tracedPath={tracedPath}
             telemetry={
               selectedAssetId
-                ? telemetry.byAssetId[selectedAssetId] ?? null
+                ? displayTelemetry.byAssetId[selectedAssetId] ?? null
                 : null
             }
-            telemetryConnection={telemetry.connection}
+            telemetryConnection={displayTelemetry.connection}
             conditionState={condition}
+            historicalMode={isHistorical}
+            historicalTimestamp={isHistorical ? history.timestamp : null}
+            historicalStatusLabel={
+              selectedHistoricalAsset?.operationalStatus ?? null
+            }
+            historicalCondition={
+              selectedHistoricalAsset
+                ? {
+                    condition: selectedHistoricalAsset.condition,
+                    score: selectedHistoricalAsset.conditionScore,
+                  }
+                : null
+            }
+            historicalMaintenanceActive={selectedMaintenanceActive}
+            historicalEvents={
+              isHistorical && selectedAssetId
+                ? history.events
+                    .filter((e) => e.assetId === selectedAssetId)
+                    .map((e) => ({
+                      timestamp: e.timestamp,
+                      type: e.type,
+                      title: e.title,
+                    }))
+                : []
+            }
+            onViewHistory={(assetId) => {
+              selectAsset(assetId, { source: "search", focus3d: true });
+              void historyControls.enterHistorical();
+            }}
             onAddInspection={(input) => {
+              if (isHistorical) {
+                return {
+                  ok: false,
+                  error: "Inspections are read-only in historical mode",
+                };
+              }
               const result = conditionControls.addInspection(input);
               return result.ok
                 ? { ok: true }
@@ -401,14 +600,38 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
           />
         </div>
 
-        <p className="pointer-events-none absolute bottom-3 left-3 max-w-[min(100%,28rem)] text-[11px] text-muted sm:bottom-4 sm:left-4">
-          Click an asset · drag to orbit · scroll to zoom
-          {electricalMode ? " · electrical connections visible" : ""}
-          {overlay === "condition" ? " · condition overlay" : ""}
-          {overlay === "terrain" ? " · terrain overlay" : ""}
-          {overlay === "weather" ? " · weather overlay" : ""}
-          {fullscreen ? " · Esc exits full screen" : ""}
-        </p>
+        {isHistorical ? (
+          <HistoryTimelineBar
+            state={history}
+            onSeek={(ts) => void historyControls.seek(ts)}
+            onPlay={() => historyControls.play()}
+            onPause={() => historyControls.pause()}
+            onStep={(d) => void historyControls.step(d)}
+            onSpeed={(s) => historyControls.setSpeed(s)}
+            onRangePreset={(preset, custom) =>
+              void historyControls.setRangePreset(preset, custom)
+            }
+            onEventClick={(event) => {
+              void historyControls.jumpToEvent(event);
+              if (event.assetId) {
+                selectAsset(event.assetId, {
+                  source: "search",
+                  focus3d: true,
+                });
+              }
+            }}
+            onReturnLive={() => historyControls.exitHistorical()}
+          />
+        ) : (
+          <p className="pointer-events-none absolute bottom-3 left-3 max-w-[min(100%,28rem)] text-[11px] text-muted sm:bottom-4 sm:left-4">
+            Click an asset · drag to orbit · scroll to zoom
+            {electricalMode ? " · electrical connections visible" : ""}
+            {overlay === "condition" ? " · condition overlay" : ""}
+            {overlay === "terrain" ? " · terrain overlay" : ""}
+            {overlay === "weather" ? " · weather overlay" : ""}
+            {fullscreen ? " · Esc exits full screen" : ""}
+          </p>
+        )}
       </div>
     </div>
   );

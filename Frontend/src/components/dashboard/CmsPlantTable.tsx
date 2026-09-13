@@ -3,9 +3,10 @@ import { panelClass } from "./panel";
 
 type CmsPlantTableProps = {
   rows: CmsPlantRow[];
+  onRowClick?: (rowId: string) => void;
 };
 
-export function CmsPlantTable({ rows }: CmsPlantTableProps) {
+export function CmsPlantTable({ rows, onRowClick }: CmsPlantTableProps) {
   return (
     <section className={`${panelClass} overflow-hidden`} aria-label="Plant grid">
       <div className="overflow-x-auto">
@@ -30,7 +31,11 @@ export function CmsPlantTable({ rows }: CmsPlantTableProps) {
             {rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-edge/60 transition-colors hover:bg-fill/40"
+                className={[
+                  "border-b border-edge/60 transition-colors hover:bg-fill/40",
+                  onRowClick ? "cursor-pointer" : "",
+                ].join(" ")}
+                onClick={() => onRowClick?.(row.id)}
               >
                 <td className="px-3 py-2.5">
                   <span className="inline-flex items-center gap-2 font-medium text-fg">

@@ -135,6 +135,140 @@ function buildKpis(projects: ProjectRecord[]): DashboardKpis {
   };
 }
 
+function emptyMonitoring(): DashboardPayload["monitoring"] {
+  return {
+    kpis: {
+      capacityMw: 0,
+      currentOutputMw: 0,
+      availabilityPct: 0,
+      todayGenerationMwh: 0,
+      vsForecastPct: 0,
+    },
+    generationSeries: [],
+    weather: {
+      irradianceWm2: 0,
+      temperatureC: 0,
+      windKmh: 0,
+      cloudCoverPct: 0,
+    },
+    alerts: [],
+    activity: [],
+    plants: [],
+  };
+}
+
+function buildSiteMonitoring(
+  projects: ProjectRecord[],
+): DashboardPayload["monitoring"] {
+  if (projects.length === 0) return emptyMonitoring();
+
+  const plants = projects.map((project) => {
+    const telemetry = buildProjectTelemetry(project);
+    return { project, kpis: telemetry.kpis, telemetry };
+  });
+
+  const capacityMw = plants.reduce((sum, p) => sum + p.kpis.capacityMw, 0);
+  const currentOutputMw = round1(
+    plants.reduce((sum, p) => sum + p.kpis.currentOutputMw, 0),
+  );
+  const todayGenerationMwh = round1(
+    plants.reduce((sum, p) => sum + p.kpis.todayGenerationMwh, 0),
+  );
+  const availabilityPct = round1(
+    plants.reduce(
+      (sum, p) =>
+        sum + p.kpis.availabilityPct * Math.max(p.kpis.capacityMw, 0.1),
+      0,
+    ) / Math.max(capacityMw, 0.1),
+  );
+
+  const hours =
+    plants[0]?.telemetry.generationSeries.map((point) => point.hour) ?? [];
+  const generationSeries = hours.map((hour, index) => {
+    let actual = 0;
+    let forecast = 0;
+    let target = 0;
+    for (const plant of plants) {
+      const point = plant.telemetry.generationSeries[index];
+      if (!point) continue;
+      actual += point.actual;
+      forecast += point.forecast;
+      target += point.target;
+    }
+    return {
+      hour,
+      actual: round1(actual),
+      forecast: round1(forecast),
+      target: round1(target),
+    };
+  });
+
+  const todayForecast = generationSeries.reduce(
+    (sum, point) => sum + point.forecast,
+    0,
+  );
+  const vsForecastPct =
+    todayForecast === 0
+      ? 0
+      : round1(Math.min(120, (todayGenerationMwh / todayForecast) * 100));
+
+  // Weighted-average weather across plants
+  const weatherWeights = plants.map((p) => Math.max(p.kpis.capacityMw, 0.1));
+  const weatherSum = weatherWeights.reduce((a, b) => a + b, 0);
+  const weather = {
+    irradianceWm2: Math.round(
+      plants.reduce(
+        (sum, p, i) =>
+          sum + p.telemetry.weather.irradianceWm2 * (weatherWeights[i] ?? 1),
+        0,
+      ) / weatherSum,
+    ),
+    temperatureC: Math.round(
+      plants.reduce(
+        (sum, p, i) =>
+          sum + p.telemetry.weather.temperatureC * (weatherWeights[i] ?? 1),
+        0,
+      ) / weatherSum,
+    ),
+    windKmh: Math.round(
+      plants.reduce(
+        (sum, p, i) =>
+          sum + p.telemetry.weather.windKmh * (weatherWeights[i] ?? 1),
+        0,
+      ) / weatherSum,
+    ),
+    cloudCoverPct: Math.round(
+      plants.reduce(
+        (sum, p, i) =>
+          sum + p.telemetry.weather.cloudCoverPct * (weatherWeights[i] ?? 1),
+        0,
+      ) / weatherSum,
+    ),
+  };
+
+  const alerts = plants.flatMap((p) => p.telemetry.alerts).slice(0, 12);
+  const activity = plants.flatMap((p) => p.telemetry.activity).slice(0, 12);
+
+  return {
+    kpis: {
+      capacityMw: round1(capacityMw),
+      currentOutputMw,
+      availabilityPct,
+      todayGenerationMwh,
+      vsForecastPct,
+    },
+    generationSeries,
+    weather,
+    alerts,
+    activity,
+    plants: plants.map(({ project, kpis }) => ({ project, kpis })),
+  };
+}
+
+function round1(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
 function formatDateLabel(date = new Date()): string {
   return date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -397,6 +531,7 @@ export async function getDashboard(
       kpis: buildKpis([]),
       projects: [],
       recentTasks: [],
+      monitoring: emptyMonitoring(),
     };
   }
 
@@ -431,6 +566,7 @@ export async function getDashboard(
     kpis: buildKpis(projects),
     projects,
     recentTasks,
+    monitoring: buildSiteMonitoring(projects),
   };
 }
 
