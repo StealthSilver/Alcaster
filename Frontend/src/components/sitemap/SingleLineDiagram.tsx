@@ -3,6 +3,12 @@ import { useMemo } from "react";
 import type { AssetModel } from "@/lib/assetModel";
 import type { ElectricalConnectionType } from "@/lib/electricalModel";
 import { buildSldModel, type SldLevel, type SldNode } from "@/lib/sldModel";
+import {
+  formatPowerKw,
+  OPERATIONAL_STATUS_COLOR,
+  operationalStatusLabel,
+  type TelemetrySnapshot,
+} from "@/lib/telemetry";
 
 function edgeStroke(type?: ElectricalConnectionType): string {
   switch (type) {
@@ -45,6 +51,7 @@ type SingleLineDiagramProps = {
   level?: SldLevel;
   blockAssetId?: string | null;
   onSelect: (assetId: string) => void;
+  telemetryByAssetId?: Record<string, TelemetrySnapshot>;
 };
 
 /** Intrinsic-size SLD canvas for use inside DiagramViewport. */
@@ -55,6 +62,7 @@ export function SingleLineDiagramCanvas({
   level = "plant",
   blockAssetId = null,
   onSelect,
+  telemetryByAssetId,
 }: SingleLineDiagramProps) {
   const sld = useMemo(
     () =>
@@ -138,6 +146,17 @@ export function SingleLineDiagramCanvas({
             Boolean(node.memberIds?.some((id) => highlight.has(id)))
           }
           dimmed={highlight.size > 0}
+          telemetry={
+            telemetryByAssetId
+              ? telemetryByAssetId[node.assetId] ??
+                (node.memberIds
+                  ? aggregateMemberTelemetry(
+                      node.memberIds,
+                      telemetryByAssetId,
+                    )
+                  : null)
+              : null
+          }
           onSelect={onSelect}
         />
       ))}
@@ -150,15 +169,20 @@ function SldNodeMark({
   selected,
   highlighted,
   dimmed,
+  telemetry,
   onSelect,
 }: {
   node: SldNode;
   selected: boolean;
   highlighted: boolean;
   dimmed: boolean;
+  telemetry?: TelemetrySnapshot | null;
   onSelect: (assetId: string) => void;
 }) {
   const opacity = dimmed && !highlighted && !selected ? 0.35 : 1;
+  const statusColor = telemetry
+    ? OPERATIONAL_STATUS_COLOR[telemetry.status]
+    : null;
   const fill = selected
     ? "color-mix(in oklab, var(--alcaster-accent) 35%, var(--alcaster-page))"
     : highlighted
@@ -166,7 +190,17 @@ function SldNodeMark({
       : "var(--alcaster-page)";
   const stroke = selected || highlighted
     ? "var(--alcaster-accent)"
-    : "var(--alcaster-edge-strong)";
+    : statusColor &&
+        (telemetry?.status === "FAULT" ||
+          telemetry?.status === "WARNING" ||
+          telemetry?.status === "OFFLINE")
+      ? statusColor
+      : "var(--alcaster-edge-strong)";
+
+  const powerLabel =
+    telemetry?.measurements.activePower != null
+      ? formatPowerKw(telemetry.measurements.activePower)
+      : null;
 
   return (
     <g
@@ -187,9 +221,17 @@ function SldNodeMark({
         stroke={stroke}
         strokeWidth={selected ? 2.4 : 1.5}
       />
+      {statusColor ? (
+        <circle
+          cx={node.x - node.w / 2 + 10}
+          cy={node.y - node.h / 2 + 10}
+          r={3.5}
+          fill={statusColor}
+        />
+      ) : null}
       <text
         x={node.x}
-        y={node.y + 1}
+        y={node.y + (powerLabel ? -4 : 1)}
         textAnchor="middle"
         dominantBaseline="middle"
         fill="var(--alcaster-fg)"
@@ -202,6 +244,18 @@ function SldNodeMark({
             ? `${node.label.slice(0, 12)}…`
             : node.label}
       </text>
+      {powerLabel ? (
+        <text
+          x={node.x}
+          y={node.y + 12}
+          textAnchor="middle"
+          fill="var(--alcaster-muted)"
+          fontSize={10}
+        >
+          {powerLabel}
+          {telemetry ? ` · ${operationalStatusLabel(telemetry.status)}` : ""}
+        </text>
+      ) : null}
       {node.type === "AGGREGATE" ? (
         <text
           x={node.x}
@@ -215,4 +269,43 @@ function SldNodeMark({
       ) : null}
     </g>
   );
+}
+
+function aggregateMemberTelemetry(
+  memberIds: string[],
+  byAssetId: Record<string, TelemetrySnapshot>,
+): TelemetrySnapshot | null {
+  let power = 0;
+  let found = 0;
+  let worst = byAssetId[memberIds[0] ?? ""]?.status;
+  for (const id of memberIds) {
+    const snap = byAssetId[id];
+    if (!snap) continue;
+    found += 1;
+    power += snap.measurements.activePower ?? 0;
+    if (
+      !worst ||
+      statusRank(snap.status) > statusRank(worst)
+    ) {
+      worst = snap.status;
+    }
+  }
+  if (found === 0 || !worst) return null;
+  return {
+    assetId: memberIds[0]!,
+    timestamp: new Date().toISOString(),
+    status: worst,
+    quality: "GOOD",
+    measurements: { activePower: power },
+    alarms: [],
+  };
+}
+
+function statusRank(status: string): number {
+  if (status === "FAULT") return 100;
+  if (status === "WARNING") return 80;
+  if (status === "OFFLINE") return 60;
+  if (status === "UNKNOWN") return 50;
+  if (status === "IDLE") return 20;
+  return 10;
 }

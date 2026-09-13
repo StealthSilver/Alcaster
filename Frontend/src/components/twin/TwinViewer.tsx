@@ -4,12 +4,29 @@ import { useSearchParams } from "react-router-dom";
 
 import { iconButtonClass } from "@/components/dashboard/panel";
 import { useAssetSelection } from "@/hooks/useAssetSelection";
+import {
+  assetsWithOpenDefects,
+  conditionMapFromStore,
+  useConditionTwin,
+} from "@/hooks/useConditionTwin";
+import {
+  statusMapFromTelemetry,
+  useLiveTelemetry,
+} from "@/hooks/useLiveTelemetry";
 import { usePanelFullscreen } from "@/hooks/usePanelFullscreen";
 import type { TwinRecord } from "@/lib/api";
 import type { ElectricalPath } from "@/lib/electricalModel";
+import { environmentFromWeatherTelemetry } from "@/lib/environmentModel";
 import { buildPlantTwinModel } from "@/lib/plantTwin";
+import { activeAlarms, type AssetOperationalStatus } from "@/lib/telemetry";
 
 import { AssetDetailsPanel } from "./AssetDetailsPanel";
+import {
+  ConditionHud,
+  type ConditionFilter,
+  type TwinOverlayMode,
+} from "./ConditionHud";
+import { LivePlantHud, type StatusFilter } from "./LivePlantHud";
 import { TwinCanvas } from "./TwinCanvas";
 
 class TwinErrorBoundary extends Component<
@@ -55,6 +72,113 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   const hydratedUrl = useRef(false);
   const [electricalMode, setElectricalMode] = useState(false);
   const [tracedPath, setTracedPath] = useState<ElectricalPath | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [conditionFilter, setConditionFilter] =
+    useState<ConditionFilter>("all");
+  const [overlay, setOverlay] = useState<TwinOverlayMode>("plant");
+  const { state: telemetry, controls: telemetryControls } = useLiveTelemetry(
+    twin,
+    assets,
+    true,
+  );
+  const { state: condition, controls: conditionControls } = useConditionTwin(
+    twin,
+    assets,
+    true,
+  );
+  const statusByAssetId = useMemo(
+    () => statusMapFromTelemetry(telemetry),
+    [telemetry],
+  );
+  const conditionByAssetId = useMemo(
+    () => conditionMapFromStore(condition),
+    [condition],
+  );
+  const defectAssetIds = useMemo(
+    () => assetsWithOpenDefects(condition),
+    [condition],
+  );
+  const mergedTelemetry = useMemo(() => {
+    const alarms = [
+      ...telemetry.alarms.map((a) => ({
+        ...a,
+        source: a.source ?? ("TELEMETRY" as const),
+      })),
+      ...condition.alarms,
+    ];
+    return {
+      ...telemetry,
+      alarms,
+      plant: {
+        ...telemetry.plant,
+        activeAlarmCount: activeAlarms(alarms).length,
+      },
+    };
+  }, [telemetry, condition.alarms]);
+
+  const environment = useMemo(() => {
+    const weatherId = assets.order.find(
+      (id) => assets.assets[id]?.assetType === "WEATHER_STATION",
+    );
+    const snap = weatherId ? telemetry.byAssetId[weatherId] : null;
+    if (!snap) {
+      return environmentFromWeatherTelemetry(
+        {
+          irradiance: telemetry.plant.irradianceWm2,
+          temperature: telemetry.plant.ambientTempC,
+          windSpeed: telemetry.plant.windSpeedMs,
+        },
+        {
+          cloudCover: Math.max(
+            0,
+            Math.min(100, 100 - telemetry.plant.irradianceWm2 / 10),
+          ),
+          rainfall: 0,
+        },
+        telemetry.plant.timestamp,
+      );
+    }
+    return environmentFromWeatherTelemetry(
+      snap.measurements,
+      {
+        cloudCover: Math.max(
+          0,
+          Math.min(100, 100 - (snap.measurements.irradiance ?? 0) / 10),
+        ),
+        rainfall: 0,
+        atmosphericPressure: 1013,
+      },
+      snap.timestamp,
+    );
+  }, [assets, telemetry]);
+
+  const filteredHighlightIds = useMemo(() => {
+    if (statusFilter !== "all") {
+      const set = new Set<string>();
+      for (const [id, snap] of Object.entries(telemetry.byAssetId)) {
+        const status = snap.status as AssetOperationalStatus;
+        if (statusFilter === "OFFLINE") {
+          if (status === "OFFLINE" || status === "UNKNOWN") set.add(id);
+        } else if (status === statusFilter) {
+          set.add(id);
+        }
+      }
+      return set;
+    }
+    if (conditionFilter !== "all") {
+      const set = new Set<string>();
+      for (const [id, c] of Object.entries(conditionByAssetId)) {
+        if (c === conditionFilter) set.add(id);
+      }
+      return set;
+    }
+    return null;
+  }, [
+    statusFilter,
+    conditionFilter,
+    telemetry.byAssetId,
+    conditionByAssetId,
+  ]);
   const {
     ref: fullscreenRef,
     active: fullscreen,
@@ -82,9 +206,9 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   }, [twin.id]);
 
   const highlightedAssetIds = useMemo(() => {
-    if (!tracedPath) return null;
-    return new Set(tracedPath.fullPath);
-  }, [tracedPath]);
+    if (tracedPath) return new Set(tracedPath.fullPath);
+    return filteredHighlightIds;
+  }, [tracedPath, filteredHighlightIds]);
 
   const electrical = assets.electrical;
 
@@ -104,6 +228,15 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
             focusToken={focusToken}
             highlightedAssetIds={highlightedAssetIds}
             electricalMode={electricalMode}
+            statusByAssetId={statusByAssetId}
+            conditionByAssetId={
+              overlay === "condition" || conditionFilter !== "all"
+                ? conditionByAssetId
+                : null
+            }
+            defectAssetIds={defectAssetIds}
+            terrain={condition.terrain}
+            overlayMode={overlay}
             onSelectAsset={(assetId) =>
               selectAsset(assetId, { source: "3d", focus3d: false })
             }
@@ -183,6 +316,47 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
               </button>
             </div>
           </div>
+          <LivePlantHud
+            state={mergedTelemetry}
+            selectedAssetId={selectedAssetId}
+            statusFilter={statusFilter}
+            onStatusFilter={(filter) => {
+              setStatusFilter(filter);
+              if (filter !== "all") setConditionFilter("all");
+            }}
+            onSelectAsset={(assetId, options) =>
+              selectAsset(assetId, {
+                source: "search",
+                focus3d: options?.focus3d ?? true,
+              })
+            }
+            onScenario={(scenario) => telemetryControls.setScenario(scenario)}
+            onPauseToggle={() =>
+              telemetryControls.setPaused(!telemetry.paused)
+            }
+            onReset={() => telemetryControls.resetSimulation()}
+            onForceSelected={(condition) => {
+              if (!selectedAssetId) return;
+              telemetryControls.forceAssetCondition(selectedAssetId, condition);
+            }}
+          />
+          <ConditionHud
+            state={condition}
+            overlay={overlay}
+            onOverlay={setOverlay}
+            conditionFilter={conditionFilter}
+            onConditionFilter={(filter) => {
+              setConditionFilter(filter);
+              if (filter !== "all") setStatusFilter("all");
+            }}
+            environment={environment}
+            onSelectAsset={(assetId, options) =>
+              selectAsset(assetId, {
+                source: "search",
+                focus3d: options?.focus3d ?? true,
+              })
+            }
+          />
         </div>
 
         <div className="pointer-events-auto absolute right-3 top-3 flex max-h-[calc(100%-5rem)] flex-col items-end gap-2 overflow-y-auto overscroll-contain sm:right-4 sm:top-4">
@@ -204,6 +378,19 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
             model={assets}
             selectedAssetId={selectedAssetId}
             tracedPath={tracedPath}
+            telemetry={
+              selectedAssetId
+                ? telemetry.byAssetId[selectedAssetId] ?? null
+                : null
+            }
+            telemetryConnection={telemetry.connection}
+            conditionState={condition}
+            onAddInspection={(input) => {
+              const result = conditionControls.addInspection(input);
+              return result.ok
+                ? { ok: true }
+                : { ok: false, error: result.error };
+            }}
             onTracePath={setTracedPath}
             onSelect={(assetId, options) =>
               selectAsset(assetId, {
@@ -217,6 +404,9 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
         <p className="pointer-events-none absolute bottom-3 left-3 max-w-[min(100%,28rem)] text-[11px] text-muted sm:bottom-4 sm:left-4">
           Click an asset · drag to orbit · scroll to zoom
           {electricalMode ? " · electrical connections visible" : ""}
+          {overlay === "condition" ? " · condition overlay" : ""}
+          {overlay === "terrain" ? " · terrain overlay" : ""}
+          {overlay === "weather" ? " · weather overlay" : ""}
           {fullscreen ? " · Esc exits full screen" : ""}
         </p>
       </div>

@@ -19,6 +19,12 @@ import {
 } from "three";
 
 import type { ElectricalConnectionType } from "@/lib/electricalModel";
+import { CONDITION_MESH_COLORS } from "@/lib/conditionModel";
+import { OPERATIONAL_MESH_COLOR } from "@/lib/telemetry";
+import {
+  terrainHillPositions,
+  type TerrainModel,
+} from "@/lib/terrainModel";
 import type { TwinLayout } from "@/lib/twinLayout";
 import type { TwinPlant } from "@/lib/twinPlant";
 
@@ -34,7 +40,30 @@ const HIGHLIGHT = "#e6740a";
 type SelectableProps = {
   selectedAssetId?: string | null;
   onSelectAsset?: (assetId: string | null) => void;
+  statusByAssetId?: Record<string, string> | null;
+  conditionByAssetId?: Record<string, string> | null;
+  defectAssetIds?: Set<string> | null;
 };
+
+function meshStatusColor(
+  assetId: string | undefined,
+  statusByAssetId: Record<string, string> | null | undefined,
+  fallback: string,
+  selected?: boolean,
+  conditionByAssetId?: Record<string, string> | null,
+): string {
+  if (selected) return HIGHLIGHT;
+  if (assetId && conditionByAssetId?.[assetId]) {
+    const c = conditionByAssetId[assetId];
+    if (c && c !== "GOOD" && c !== "UNKNOWN") {
+      return CONDITION_MESH_COLORS[c as keyof typeof CONDITION_MESH_COLORS] ?? fallback;
+    }
+  }
+  if (!assetId || !statusByAssetId) return fallback;
+  const status = statusByAssetId[assetId];
+  if (!status) return fallback;
+  return OPERATIONAL_MESH_COLOR[status] ?? fallback;
+}
 
 function stopSelect(
   event: { stopPropagation: () => void },
@@ -112,12 +141,39 @@ function createPanelTexture(plant: TwinPlant, colors: ReturnType<typeof palette>
   return texture;
 }
 
-function Ground({ layout }: { layout: TwinLayout }) {
+function Ground({
+  layout,
+  terrain,
+}: {
+  layout: TwinLayout;
+  terrain?: TerrainModel | null;
+}) {
   const plant = layout.plant;
   const colors = palette(plant).terrain;
-  const slope =
-    plant.terrainType === "sloped" ? 0.035 : plant.terrainType === "mostly_flat" ? 0.012 : 0;
-  const hill = plant.terrainType === "hilly";
+  const slope = terrain?.visualSlope ??
+    (plant.terrainType === "sloped"
+      ? 0.035
+      : plant.terrainType === "mostly_flat"
+        ? 0.012
+        : 0);
+  const hills = terrain
+    ? terrainHillPositions(terrain, layout.width, layout.depth)
+    : plant.terrainType === "hilly"
+      ? [
+          {
+            x: -layout.width * 0.28,
+            y: 2.2,
+            z: -layout.depth * 0.22,
+            r: 7,
+          },
+          {
+            x: layout.width * 0.22,
+            y: 2.2,
+            z: layout.depth * 0.18,
+            r: 9,
+          },
+        ]
+      : [];
 
   return (
     <group>
@@ -133,17 +189,12 @@ function Ground({ layout }: { layout: TwinLayout }) {
         <planeGeometry args={[layout.width, layout.depth]} />
         <meshStandardMaterial color={colors.mid} roughness={0.95} />
       </mesh>
-      {hill
-        ? [
-            [-layout.width * 0.28, -layout.depth * 0.22],
-            [layout.width * 0.22, layout.depth * 0.18],
-          ].map(([x, z], i) => (
-            <mesh key={i} position={[x, 2.2, z]}>
-              <sphereGeometry args={[7 + i * 2, 16, 12]} />
-              <meshStandardMaterial color={colors.near} roughness={1} />
-            </mesh>
-          ))
-        : null}
+      {hills.map((hill, i) => (
+        <mesh key={i} position={[hill.x, hill.y * 0.45, hill.z]}>
+          <sphereGeometry args={[hill.r, 16, 12]} />
+          <meshStandardMaterial color={colors.near} roughness={1} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -777,6 +828,8 @@ function Combiners({
   layout,
   selectedAssetId,
   onSelectAsset,
+  statusByAssetId,
+  conditionByAssetId,
 }: { layout: TwinLayout } & SelectableProps) {
   return (
     <group>
@@ -792,7 +845,13 @@ function Combiners({
             <mesh castShadow>
               <boxGeometry args={[0.7, 1.1, 0.45]} />
               <meshStandardMaterial
-                color={selected ? HIGHLIGHT : "#6b7280"}
+                color={meshStatusColor(
+                  box.assetId,
+                  statusByAssetId,
+                  "#6b7280",
+                  selected,
+                  conditionByAssetId,
+                )}
                 metalness={0.4}
                 roughness={0.45}
               />
@@ -808,6 +867,9 @@ function Inverters({
   layout,
   selectedAssetId,
   onSelectAsset,
+  statusByAssetId,
+  conditionByAssetId,
+  defectAssetIds,
 }: { layout: TwinLayout } & SelectableProps) {
   return (
     <group>
@@ -816,6 +878,23 @@ function Inverters({
         const d = inv.d ?? 1.8;
         const h = inv.h ?? 2.5;
         const selected = selectedAssetId === inv.assetId;
+        const body = meshStatusColor(
+          inv.assetId,
+          statusByAssetId,
+          "#d1d5db",
+          selected,
+          conditionByAssetId,
+        );
+        const pad = meshStatusColor(
+          inv.assetId,
+          statusByAssetId,
+          "#9ca3af",
+          selected,
+          conditionByAssetId,
+        );
+        const hasDefect = Boolean(
+          inv.assetId && defectAssetIds?.has(inv.assetId),
+        );
         return (
           <group
             key={inv.assetId ?? i}
@@ -825,15 +904,12 @@ function Inverters({
           >
             <mesh position={[0, 0.06, 0]} receiveShadow>
               <boxGeometry args={[w + 0.8, 0.12, d + 0.7]} />
-              <meshStandardMaterial
-                color={selected ? HIGHLIGHT : "#9ca3af"}
-                roughness={0.7}
-              />
+              <meshStandardMaterial color={pad} roughness={0.7} />
             </mesh>
             <mesh position={[0, h / 2 + 0.1, 0]} castShadow>
               <boxGeometry args={[w, h, d]} />
               <meshStandardMaterial
-                color={selected ? HIGHLIGHT : "#d1d5db"}
+                color={body}
                 metalness={0.35}
                 roughness={0.4}
               />
@@ -842,6 +918,16 @@ function Inverters({
               <boxGeometry args={[w * 0.75, h * 0.64, 0.06]} />
               <meshStandardMaterial color="#1f2937" />
             </mesh>
+            {hasDefect ? (
+              <mesh position={[w * 0.35, h + 0.45, 0]}>
+                <sphereGeometry args={[0.28, 12, 12]} />
+                <meshStandardMaterial
+                  color="#f07167"
+                  emissive="#f07167"
+                  emissiveIntensity={0.35}
+                />
+              </mesh>
+            ) : null}
           </group>
         );
       })}
@@ -853,16 +939,22 @@ function Transformer({
   pose,
   dry,
   selected,
+  statusColor,
   onSelect,
 }: {
   pose: TwinLayout["transformers"][number];
   dry: boolean;
   selected?: boolean;
+  statusColor?: string;
   onSelect?: (assetId: string | null) => void;
 }) {
   const w = pose.w ?? 5.2;
   const d = pose.d ?? 3.4;
   const h = pose.h ?? 2.8;
+  const body = selected
+    ? HIGHLIGHT
+    : statusColor ?? (dry ? "#6b7280" : "#5b6a58");
+  const pad = selected ? HIGHLIGHT : statusColor ?? "#9ca3af";
   return (
     <group
       position={[pose.x, 0, pose.z]}
@@ -871,13 +963,13 @@ function Transformer({
     >
       <mesh position={[0, 0.08, 0]}>
         <boxGeometry args={[w, 0.16, d]} />
-        <meshStandardMaterial color={selected ? HIGHLIGHT : "#9ca3af"} />
+        <meshStandardMaterial color={pad} />
       </mesh>
       {dry ? (
         <mesh position={[0, h / 2, 0]} castShadow>
           <boxGeometry args={[w * 0.7, h, d * 0.7]} />
           <meshStandardMaterial
-            color={selected ? HIGHLIGHT : "#6b7280"}
+            color={body}
             metalness={0.4}
             roughness={0.4}
           />
@@ -886,7 +978,7 @@ function Transformer({
         <mesh position={[0, h / 2, 0]} castShadow>
           <cylinderGeometry args={[Math.min(w, d) * 0.28, Math.min(w, d) * 0.28, h, 20]} />
           <meshStandardMaterial
-            color={selected ? HIGHLIGHT : "#5b6a58"}
+            color={body}
             metalness={0.45}
             roughness={0.4}
           />
@@ -900,6 +992,8 @@ function Substations({
   layout,
   selectedAssetId,
   onSelectAsset,
+  statusByAssetId,
+  conditionByAssetId,
 }: { layout: TwinLayout } & SelectableProps) {
   if (!layout.plant.substationPresent) return null;
   const gis = layout.plant.substationType === "gis";
@@ -907,6 +1001,7 @@ function Substations({
     <group>
       {layout.substations.map((p, i) => {
         const selected = selectedAssetId === p.assetId;
+        const statusColor = meshStatusColor(p.assetId, statusByAssetId, "#71717a", selected, conditionByAssetId);
         return (
           <group
             key={p.assetId ?? i}
@@ -922,7 +1017,7 @@ function Substations({
               <mesh position={[0, (p.h ?? 5) / 2, 0]} castShadow>
                 <boxGeometry args={[(p.w ?? 16) * 0.55, p.h ?? 5, (p.d ?? 12) * 0.5]} />
                 <meshStandardMaterial
-                  color={selected ? HIGHLIGHT : "#71717a"}
+                  color={statusColor}
                   metalness={0.45}
                   roughness={0.35}
                 />
@@ -956,10 +1051,13 @@ function GridYard({
   layout,
   selectedAssetId,
   onSelectAsset,
+  statusByAssetId,
+  conditionByAssetId,
 }: { layout: TwinLayout } & SelectableProps) {
   if (!layout.plant.substationPresent) return null;
   const p = layout.grid;
   const selected = selectedAssetId === p.assetId;
+  const color = meshStatusColor(p.assetId, statusByAssetId, "#8b919a", selected, conditionByAssetId);
   return (
     <group
       position={[p.x, 0, p.z]}
@@ -971,7 +1069,7 @@ function GridYard({
           <mesh position={[-1.1, 5.5, 0]}>
             <boxGeometry args={[0.22, 11, 0.22]} />
             <meshStandardMaterial
-              color={selected ? HIGHLIGHT : "#8b919a"}
+              color={color}
               metalness={0.55}
               roughness={0.35}
             />
@@ -979,7 +1077,7 @@ function GridYard({
           <mesh position={[1.1, 5.5, 0]}>
             <boxGeometry args={[0.22, 11, 0.22]} />
             <meshStandardMaterial
-              color={selected ? HIGHLIGHT : "#8b919a"}
+              color={color}
               metalness={0.55}
               roughness={0.35}
             />
@@ -1029,10 +1127,13 @@ function WeatherStation({
   layout,
   selectedAssetId,
   onSelectAsset,
+  statusByAssetId,
+  conditionByAssetId,
 }: { layout: TwinLayout } & SelectableProps) {
   if (!layout.weather) return null;
   const p = layout.weather;
   const selected = selectedAssetId === p.assetId;
+  const color = meshStatusColor(p.assetId, statusByAssetId, "#9ca3af", selected, conditionByAssetId);
   return (
     <group
       position={[p.x, 0, p.z]}
@@ -1042,7 +1143,7 @@ function WeatherStation({
       <mesh position={[0, 2.1, 0]}>
         <cylinderGeometry args={[0.07, 0.09, 4.2, 10]} />
         <meshStandardMaterial
-          color={selected ? HIGHLIGHT : "#9ca3af"}
+          color={color}
           metalness={0.6}
           roughness={0.35}
         />
@@ -1050,7 +1151,7 @@ function WeatherStation({
       <mesh position={[0, 4.3, 0]}>
         <boxGeometry args={[0.35, 0.12, 0.35]} />
         <meshStandardMaterial
-          color={selected ? HIGHLIGHT : "#8b919a"}
+          color={color}
           metalness={0.45}
           roughness={0.35}
         />
@@ -1066,6 +1167,11 @@ export function SiteModel({
   highlightedAssetIds,
   electricalMode,
   electricalPaths,
+  statusByAssetId,
+  conditionByAssetId,
+  defectAssetIds,
+  terrain,
+  overlayMode = "plant",
 }: {
   layout: TwinLayout;
   light?: boolean;
@@ -1074,15 +1180,22 @@ export function SiteModel({
   highlightedAssetIds?: Set<string> | null;
   electricalMode?: boolean;
   electricalPaths?: TwinElectricalPath[];
+  statusByAssetId?: Record<string, string> | null;
+  conditionByAssetId?: Record<string, string> | null;
+  defectAssetIds?: Set<string> | null;
+  terrain?: TerrainModel | null;
+  overlayMode?: "plant" | "condition" | "terrain" | "weather";
 }) {
   const isHighlighted = (assetId?: string) =>
     Boolean(assetId && highlightedAssetIds?.has(assetId));
+  const useCondition =
+    overlayMode === "condition" || Boolean(conditionByAssetId);
 
   return (
     <group
       onPointerMissed={() => onSelectAsset?.(null)}
     >
-      <Ground layout={layout} />
+      <Ground layout={layout} terrain={terrain} />
       <Roads layout={layout} selectedAssetId={selectedAssetId} onSelectAsset={onSelectAsset} />
       <Fence layout={layout} selectedAssetId={selectedAssetId} onSelectAsset={onSelectAsset} />
       <Tables
@@ -1101,11 +1214,16 @@ export function SiteModel({
         layout={layout}
         selectedAssetId={selectedAssetId}
         onSelectAsset={onSelectAsset}
+        statusByAssetId={statusByAssetId}
+        conditionByAssetId={useCondition ? conditionByAssetId : null}
       />
       <Inverters
         layout={layout}
         selectedAssetId={selectedAssetId}
         onSelectAsset={onSelectAsset}
+        statusByAssetId={statusByAssetId}
+        conditionByAssetId={useCondition ? conditionByAssetId : null}
+        defectAssetIds={defectAssetIds}
       />
       {layout.transformers.map((xfmr, i) => (
         <Transformer
@@ -1115,6 +1233,20 @@ export function SiteModel({
           selected={
             selectedAssetId === xfmr.assetId || isHighlighted(xfmr.assetId)
           }
+          statusColor={
+            xfmr.assetId
+              ? meshStatusColor(
+                  xfmr.assetId,
+                  statusByAssetId,
+                  "",
+                  false,
+                  useCondition ? conditionByAssetId : null,
+                ) ||
+                (statusByAssetId?.[xfmr.assetId]
+                  ? OPERATIONAL_MESH_COLOR[statusByAssetId[xfmr.assetId]!]
+                  : undefined)
+              : undefined
+          }
           onSelect={onSelectAsset}
         />
       ))}
@@ -1122,11 +1254,15 @@ export function SiteModel({
         layout={layout}
         selectedAssetId={selectedAssetId}
         onSelectAsset={onSelectAsset}
+        statusByAssetId={statusByAssetId}
+        conditionByAssetId={useCondition ? conditionByAssetId : null}
       />
       <GridYard
         layout={layout}
         selectedAssetId={selectedAssetId}
         onSelectAsset={onSelectAsset}
+        statusByAssetId={statusByAssetId}
+        conditionByAssetId={useCondition ? conditionByAssetId : null}
       />
       <Buildings
         layout={layout}
@@ -1137,6 +1273,8 @@ export function SiteModel({
         layout={layout}
         selectedAssetId={selectedAssetId}
         onSelectAsset={onSelectAsset}
+        statusByAssetId={statusByAssetId}
+        conditionByAssetId={useCondition ? conditionByAssetId : null}
       />
     </group>
   );

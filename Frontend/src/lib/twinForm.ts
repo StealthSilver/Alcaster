@@ -49,8 +49,13 @@ export type TwinFormValues = {
   areaUnit: "acres" | "hectares" | "sq_m";
   latitude: string;
   longitude: string;
-  terrainType: "flat" | "mostly_flat" | "sloped" | "hilly" | "unknown";
+  terrainType: "flat" | "mostly_flat" | "sloped" | "hilly" | "mountainous" | "unknown";
   averageSiteElevation: string;
+  minSiteElevation: string;
+  maxSiteElevation: string;
+  averageSlopeDeg: string;
+  terrainSurface: string;
+  drainagePattern: string;
   siteBoundaryFile: string;
 
   solarTechnology:
@@ -361,9 +366,10 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
         required: true,
         options: [
           { value: "flat", label: "Flat" },
-          { value: "mostly_flat", label: "Mostly flat" },
+          { value: "mostly_flat", label: "Gently sloped" },
           { value: "sloped", label: "Sloped" },
           { value: "hilly", label: "Hilly" },
+          { value: "mountainous", label: "Mountainous" },
           { value: "unknown", label: "Unknown" },
         ],
       },
@@ -372,6 +378,42 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
         label: "Average site elevation (m)",
         type: "number",
         step: "1",
+      },
+      {
+        key: "minSiteElevation",
+        label: "Minimum site elevation (m)",
+        type: "number",
+        step: "1",
+      },
+      {
+        key: "maxSiteElevation",
+        label: "Maximum site elevation (m)",
+        type: "number",
+        step: "1",
+      },
+      {
+        key: "averageSlopeDeg",
+        label: "Average slope (°)",
+        type: "number",
+        step: "0.1",
+      },
+      {
+        key: "terrainSurface",
+        label: "Terrain surface",
+        type: "select",
+        options: [
+          { value: "", label: "Use appearance" },
+          { value: "bare", label: "Bare" },
+          { value: "grass", label: "Grass" },
+          { value: "scrub", label: "Scrub" },
+          { value: "desert", label: "Desert" },
+          { value: "rocky", label: "Rocky" },
+        ],
+      },
+      {
+        key: "drainagePattern",
+        label: "Drainage pattern",
+        type: "text",
       },
       { key: "siteBoundaryFile", label: "Site boundary", type: "file" },
     ],
@@ -1351,6 +1393,11 @@ export function defaultsFromProject(
     longitude: String(existing?.longitude ?? site?.longitude ?? ""),
     terrainType: "flat",
     averageSiteElevation: "",
+    minSiteElevation: "",
+    maxSiteElevation: "",
+    averageSlopeDeg: "",
+    terrainSurface: "",
+    drainagePattern: "",
     siteBoundaryFile: "",
 
     solarTechnology,

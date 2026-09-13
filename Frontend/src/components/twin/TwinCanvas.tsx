@@ -30,6 +30,13 @@ type TwinCanvasProps = {
   onSelectAsset: (assetId: string | null) => void;
   highlightedAssetIds?: Set<string> | null;
   electricalMode?: boolean;
+  /** Phase 4: operational status by assetId for live mesh coloring. */
+  statusByAssetId?: Record<string, string> | null;
+  /** Phase 5: physical condition by assetId */
+  conditionByAssetId?: Record<string, string> | null;
+  defectAssetIds?: Set<string> | null;
+  terrain?: import("@/lib/terrainModel").TerrainModel | null;
+  overlayMode?: "plant" | "condition" | "terrain" | "weather";
 };
 
 type ControlsLike = {
@@ -125,6 +132,11 @@ export function TwinCanvas({
   onSelectAsset,
   highlightedAssetIds,
   electricalMode,
+  statusByAssetId,
+  conditionByAssetId,
+  defectAssetIds,
+  terrain,
+  overlayMode = "plant",
 }: TwinCanvasProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -236,6 +248,11 @@ export function TwinCanvas({
           highlightedAssetIds={highlightedAssetIds}
           electricalMode={electricalMode}
           electricalPaths={electricalPaths}
+          statusByAssetId={statusByAssetId}
+          conditionByAssetId={conditionByAssetId}
+          defectAssetIds={defectAssetIds}
+          terrain={terrain}
+          overlayMode={overlayMode}
         />
       </group>
       <OrbitControls

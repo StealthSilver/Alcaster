@@ -63,7 +63,7 @@ export type Asset = {
   metadata: Record<string, unknown>;
   /** Phase 3: connection IDs from the electrical topology graph. */
   electricalConnections?: unknown[];
-  /** Phase 4 extension point — not populated in Phase 3. */
+  /** Phase 4–5: live/inspection data live in telemetry + condition stores (not copied here). */
   telemetry?: unknown;
   maintenanceRecords?: unknown[];
   inspectionRecords?: unknown[];

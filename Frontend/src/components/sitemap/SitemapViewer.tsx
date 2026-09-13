@@ -21,8 +21,14 @@ import { SitemapDiagram } from "@/components/sitemap/SitemapDiagram";
 import { SitemapTree } from "@/components/sitemap/SitemapTree";
 import { SingleLineDiagramCanvas } from "@/components/sitemap/SingleLineDiagram";
 import { useAssetSelection } from "@/hooks/useAssetSelection";
+import { useConditionTwin } from "@/hooks/useConditionTwin";
+import { useLiveTelemetry } from "@/hooks/useLiveTelemetry";
 import { usePanelFullscreen } from "@/hooks/usePanelFullscreen";
 import type { TwinRecord } from "@/lib/api";
+import {
+  conditionLabel,
+} from "@/lib/conditionModel";
+import type { ConditionStoreState } from "@/lib/conditionStore";
 import { buildElectricalTree } from "@/lib/electricalTree";
 import type { ElectricalPath } from "@/lib/electricalModel";
 import {
@@ -33,10 +39,19 @@ import {
   SLD_STAGES,
   type SitemapComponent,
   type SitemapKind,
+  type SitemapModel,
   type SitemapStatus,
   type SitemapTreeNode,
 } from "@/lib/sitemapModel";
 import type { SldLevel } from "@/lib/sldModel";
+import {
+  formatPowerKw,
+  operationalStatusLabel,
+  operationalToAssetStatus,
+  operationalToSitemapStatus,
+  type TelemetrySnapshot,
+  type TelemetryStoreSnapshot,
+} from "@/lib/telemetry";
 
 type SitemapViewerProps = {
   twin: TwinRecord;
@@ -60,10 +75,20 @@ const VIEW_SCALE: Record<ViewMode, number> = {
 
 export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   const model = useMemo(() => buildSitemapModel(twin), [twin]);
-  const physicalTree = useMemo(() => buildSitemapTree(model), [model]);
+  const { state: telemetry } = useLiveTelemetry(twin, model.assets, true);
+  const { state: condition, controls: conditionControls } = useConditionTwin(
+    twin,
+    model.assets,
+    true,
+  );
+  const liveModel = useMemo(
+    () => applyLiveStatusToSitemap(model, telemetry, condition),
+    [model, telemetry, condition],
+  );
+  const physicalTree = useMemo(() => buildSitemapTree(liveModel), [liveModel]);
   const electricalTree = useMemo(
-    () => buildElectricalTree(model.assets),
-    [model.assets],
+    () => buildElectricalTree(liveModel.assets),
+    [liveModel.assets],
   );
   const frameRef = useRef<HTMLDivElement>(null);
   const {
@@ -87,8 +112,11 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   const [pointer, setPointer] = useState({ x: 24, y: 24 });
   const [tracedPath, setTracedPath] = useState<ElectricalPath | null>(null);
   const { selectedAssetId, selectAsset } = useAssetSelection(twin.projectId);
-  const counts = useMemo(() => countByKind(model.components), [model.components]);
-  const plantName = model.plant.projectName || projectName;
+  const counts = useMemo(
+    () => countByKind(liveModel.components),
+    [liveModel.components],
+  );
+  const plantName = liveModel.plant.projectName || projectName;
 
   const tree = treeMode === "electrical" ? electricalTree : physicalTree;
 
@@ -98,13 +126,25 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   }, [selectedAssetId, tree]);
 
   const hovered = hoveredId
-    ? model.components.find((component) => component.id === hoveredId) ?? null
+    ? liveModel.components.find((component) => component.id === hoveredId) ??
+      null
+    : null;
+
+  const hoveredTelemetry = hovered
+    ? telemetry.byAssetId[hovered.assetId] ?? null
     : null;
 
   const pathHighlight = useMemo(() => {
     if (!tracedPath) return null;
     return new Set(tracedPath.fullPath);
   }, [tracedPath]);
+
+  const selectedDetailId =
+    selectedAssetId && liveModel.assets.assets[selectedAssetId]
+      ? selectedAssetId
+      : selectedNode?.assetId && liveModel.assets.assets[selectedNode.assetId]
+        ? selectedNode.assetId
+        : null;
 
   useEffect(() => {
     setTracedPath(null);
@@ -118,7 +158,7 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   function handleHover(id: string | null) {
     setHoveredId(id);
     if (id) {
-      const match = model.components.find((component) => component.id === id);
+      const match = liveModel.components.find((component) => component.id === id);
       setHoveredKind(match?.kind ?? null);
     } else {
       setHoveredKind(null);
@@ -181,7 +221,7 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
           >
             <div className="h-[min(72vh,680px)] w-[min(92vw,1080px)]">
               <SitemapDiagram
-                model={model}
+                model={liveModel}
                 hoveredId={hoveredId}
                 hoveredKind={hoveredId ? null : hoveredKind}
                 selectedId={selectedAssetId}
@@ -197,7 +237,7 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
         <div className="absolute inset-0 pb-3 pt-14 pr-[min(252px,42%)] sm:pt-16">
           <SitemapTree
             root={tree}
-            model={model}
+            model={liveModel}
             selectedId={selectedNode?.id ?? tree.id}
             onSelect={selectFromTree}
           />
@@ -213,10 +253,11 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
             className="rounded-xl border border-edge bg-[color-mix(in_oklab,var(--alcaster-page)_92%,#1a1f24)]"
           >
             <SingleLineDiagramCanvas
-              model={model.assets}
+              model={liveModel.assets}
               selectedAssetId={selectedAssetId}
               highlightedIds={pathHighlight}
               level={sldLevel}
+              telemetryByAssetId={telemetry.byAssetId}
               onSelect={(assetId) =>
                 selectAsset(assetId, { source: "sitemap", focus3d: true })
               }
@@ -387,15 +428,22 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
             </button>
           </div>
           <AssetDetailsPanel
-            model={model.assets}
-            selectedAssetId={
-              selectedAssetId && model.assets.assets[selectedAssetId]
-                ? selectedAssetId
-                : selectedNode?.assetId && model.assets.assets[selectedNode.assetId]
-                  ? selectedNode.assetId
-                  : null
-            }
+            model={liveModel.assets}
+            selectedAssetId={selectedDetailId}
             tracedPath={tracedPath}
+            telemetry={
+              selectedDetailId
+                ? telemetry.byAssetId[selectedDetailId] ?? null
+                : null
+            }
+            telemetryConnection={telemetry.connection}
+            conditionState={condition}
+            onAddInspection={(input) => {
+              const result = conditionControls.addInspection(input);
+              return result.ok
+                ? { ok: true }
+                : { ok: false, error: result.error };
+            }}
             onTracePath={setTracedPath}
             onSelect={(assetId, options) =>
               selectAsset(assetId, {
@@ -410,7 +458,7 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
           <div className="pointer-events-auto absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4">
             <SldStrip
               modelCounts={counts}
-              electrical={model.assets.electrical}
+              electrical={liveModel.assets.electrical}
               hoveredKind={hoveredKind}
               onHoverKind={(kind) => {
                 setHoveredId(null);
@@ -429,6 +477,7 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
       {view === "map" && hovered ? (
         <HoverCard
           component={hovered}
+          telemetry={hoveredTelemetry}
           x={pointer.x}
           y={pointer.y}
           bounds={frameRef.current?.getBoundingClientRect() ?? null}
@@ -507,11 +556,13 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function HoverCard({
   component,
+  telemetry,
   x,
   y,
   bounds,
 }: {
   component: SitemapComponent;
+  telemetry?: TelemetrySnapshot | null;
   x: number;
   y: number;
   bounds: DOMRect | null;
@@ -521,6 +572,12 @@ function HoverCard({
   const maxTop = Math.max(12, (bounds?.height ?? 480) - 320);
   const left = Math.min(Math.max(12, x + 16), maxLeft);
   const top = Math.min(Math.max(12, y + 16), maxTop);
+  const liveStatus = telemetry
+    ? operationalToSitemapStatus(telemetry.status)
+    : component.status;
+  const liveLabel = telemetry
+    ? operationalStatusLabel(telemetry.status)
+    : component.status;
   return (
     <div
       className="pointer-events-none absolute z-20 w-[280px] rounded-xl border border-edge-strong bg-page/95 px-3 py-2.5 shadow-[var(--alcaster-shadow)] backdrop-blur-md"
@@ -534,20 +591,82 @@ function HoverCard({
         <span
           className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em]"
           style={{
-            color: statusColor[component.status],
-            background: `${statusColor[component.status]}22`,
+            color: statusColor[liveStatus],
+            background: `${statusColor[liveStatus]}22`,
           }}
         >
-          {component.status}
+          {liveLabel}
         </span>
       </div>
       <dl className="mt-2 max-h-56 space-y-1.5 overflow-y-auto border-t border-edge pt-2 text-[11px]">
+        {telemetry?.measurements.activePower != null ? (
+          <Row
+            label="Power"
+            value={formatPowerKw(telemetry.measurements.activePower)}
+          />
+        ) : null}
+        {telemetry?.measurements.temperature != null ? (
+          <Row
+            label="Temp"
+            value={`${telemetry.measurements.temperature.toFixed(1)} °C`}
+          />
+        ) : null}
         {component.rows.slice(0, 8).map((row) => (
           <Row key={row.label} label={row.label} value={row.value} />
         ))}
       </dl>
     </div>
   );
+}
+
+function applyLiveStatusToSitemap(
+  model: SitemapModel,
+  telemetry: TelemetryStoreSnapshot,
+  condition: ConditionStoreState,
+): SitemapModel {
+  if (!telemetry.lastUpdated && !condition.generatedAt) return model;
+
+  const assets = { ...model.assets.assets };
+  for (const [assetId, snap] of Object.entries(telemetry.byAssetId)) {
+    const asset = assets[assetId];
+    if (!asset) continue;
+    assets[assetId] = {
+      ...asset,
+      status: operationalToAssetStatus(snap.status),
+    };
+  }
+
+  return {
+    ...model,
+    assets: { ...model.assets, assets },
+    components: model.components.map((component) => {
+      const snap = telemetry.byAssetId[component.assetId];
+      const cond = condition.latestByAsset[component.assetId];
+      let status = component.status;
+      const rows = [
+        ...component.rows.filter(
+          (r) => r.label !== "Live power" && r.label !== "Condition",
+        ),
+      ];
+      if (snap) {
+        status = operationalToSitemapStatus(snap.status);
+        const power = snap.measurements.activePower;
+        if (power != null) {
+          rows.unshift({ label: "Live power", value: formatPowerKw(power) });
+        }
+      }
+      if (cond) {
+        rows.unshift({
+          label: "Condition",
+          value: `${conditionLabel(cond.condition)} (${cond.score})`,
+        });
+        if (cond.condition === "CRITICAL") status = "OFFLINE";
+        else if (cond.condition === "DEGRADED" && status === "ONLINE")
+          status = "WARNING";
+      }
+      return { ...component, status, rows };
+    }),
+  };
 }
 
 function SldStrip({

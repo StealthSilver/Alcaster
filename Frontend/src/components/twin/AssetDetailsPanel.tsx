@@ -1,4 +1,4 @@
-import { Search, X, Zap } from "lucide-react";
+import { Search, X, Zap, Activity, ClipboardCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
@@ -10,12 +10,47 @@ import {
   type AssetStatus,
 } from "@/lib/assetModel";
 import {
+  CONDITION_COLORS,
+  conditionLabel,
+  defectsForAsset,
+  searchDefects,
+  type ConditionRecord,
+  type AssetDefect,
+} from "@/lib/conditionModel";
+import type { ConditionStoreState } from "@/lib/conditionStore";
+import {
   getElectricalPath,
   getImmediateDownstream,
   getImmediateUpstream,
   searchElectricalAssets,
   type ElectricalPath,
 } from "@/lib/electricalModel";
+import {
+  INSPECTION_TYPE_LABELS,
+  latestInspection,
+  searchInspections,
+  type InspectionCondition,
+  type InspectionType,
+} from "@/lib/inspectionModel";
+import {
+  formatClock,
+  formatCurrent,
+  formatEnergyKwh,
+  formatFrequency,
+  formatIrradiance,
+  formatPercent,
+  formatPowerFactor,
+  formatPowerKw,
+  formatRelativeAge,
+  formatTempC,
+  formatVoltage,
+  formatWind,
+  operationalStatusLabel,
+  operationalToAssetStatus,
+  OPERATIONAL_STATUS_COLOR,
+  type TelemetryConnectionState,
+  type TelemetrySnapshot,
+} from "@/lib/telemetry";
 
 const statusColor: Record<AssetStatus, string> = {
   operational: "rgba(120, 180, 140, 0.95)",
@@ -31,9 +66,20 @@ type AssetDetailsPanelProps = {
   onSelect: (assetId: string | null, options?: { focus3d?: boolean }) => void;
   showSearch?: boolean;
   showCounts?: boolean;
-  /** When true, highlight the traced electrical path in parent views. */
   onTracePath?: (path: ElectricalPath | null) => void;
   tracedPath?: ElectricalPath | null;
+  telemetry?: TelemetrySnapshot | null;
+  telemetryConnection?: TelemetryConnectionState;
+  /** Phase 5 condition / inspection bundle */
+  conditionState?: ConditionStoreState | null;
+  onAddInspection?: (input: {
+    assetId: string;
+    inspectionType: InspectionType;
+    inspectionDate: string;
+    condition: InspectionCondition;
+    notes?: string;
+    finding?: string;
+  }) => { ok: boolean; error?: string };
 };
 
 export function AssetDetailsPanel({
@@ -44,12 +90,36 @@ export function AssetDetailsPanel({
   showCounts = true,
   onTracePath,
   tracedPath,
+  telemetry = null,
+  telemetryConnection,
+  conditionState = null,
+  onAddInspection,
 }: AssetDetailsPanelProps) {
   const [query, setQuery] = useState("");
   const [showIssues, setShowIssues] = useState(false);
+  const [showAddInspection, setShowAddInspection] = useState(false);
+  const [inspType, setInspType] = useState<InspectionType>("VISUAL");
+  const [inspCondition, setInspCondition] =
+    useState<InspectionCondition>("GOOD");
+  const [inspNotes, setInspNotes] = useState("");
+  const [inspFinding, setInspFinding] = useState("");
+  const [inspError, setInspError] = useState<string | null>(null);
   const asset = selectedAssetId ? model.assets[selectedAssetId] ?? null : null;
   const rows = asset ? assetDetailRows(asset, model) : plantCountRows(model);
   const electrical = model.electrical;
+
+  const conditionRecord: ConditionRecord | null =
+    asset && conditionState
+      ? conditionState.latestByAsset[asset.assetId] ?? null
+      : null;
+  const assetDefects: AssetDefect[] =
+    asset && conditionState
+      ? defectsForAsset(conditionState.defects, asset.assetId)
+      : [];
+  const lastInsp =
+    asset && conditionState
+      ? latestInspection(conditionState.inspections, asset.assetId)
+      : null;
 
   const results = useMemo(() => {
     if (query.trim().length < 2) return [];
@@ -74,8 +144,29 @@ export function AssetDetailsPanel({
       }
       if (merged.length >= 8) break;
     }
+    // Phase 5: inspection / finding search → resolve to assets
+    if (conditionState && merged.length < 8) {
+      for (const insp of searchInspections(conditionState.inspections, query, 4)) {
+        if (seen.has(insp.assetId)) continue;
+        const existing = model.assets[insp.assetId];
+        if (existing) {
+          seen.add(insp.assetId);
+          merged.push(existing);
+        }
+        if (merged.length >= 8) break;
+      }
+      for (const def of searchDefects(conditionState.defects, query, 4)) {
+        if (seen.has(def.assetId)) continue;
+        const existing = model.assets[def.assetId];
+        if (existing) {
+          seen.add(def.assetId);
+          merged.push(existing);
+        }
+        if (merged.length >= 8) break;
+      }
+    }
     return merged;
-  }, [model, query]);
+  }, [model, query, conditionState]);
 
   const upstream = useMemo(() => {
     if (!asset || !electrical) return [];
@@ -157,11 +248,21 @@ export function AssetDetailsPanel({
               <span
                 className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em]"
                 style={{
-                  color: statusColor[asset.status],
-                  background: `${statusColor[asset.status]}22`,
+                  color: telemetry
+                    ? OPERATIONAL_STATUS_COLOR[telemetry.status] ??
+                      statusColor[operationalToAssetStatus(telemetry.status)]
+                    : statusColor[asset.status],
+                  background: `${
+                    telemetry
+                      ? OPERATIONAL_STATUS_COLOR[telemetry.status] ??
+                        statusColor[operationalToAssetStatus(telemetry.status)]
+                      : statusColor[asset.status]
+                  }22`,
                 }}
               >
-                {asset.status}
+                {telemetry
+                  ? operationalStatusLabel(telemetry.status)
+                  : asset.status}
               </span>
               <button
                 type="button"
@@ -187,6 +288,223 @@ export function AssetDetailsPanel({
             </div>
           ))}
         </dl>
+
+        {asset && telemetry ? (
+          <div className="mt-3 border-t border-edge pt-2">
+            <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.12em] text-accent">
+              <Activity className="h-3 w-3" />
+              Live
+            </p>
+            <dl className="space-y-1.5 text-[11px]">
+              {liveTelemetryRows(telemetry).map((row) => (
+                <div
+                  key={`${row.label}-${row.value}`}
+                  className="flex justify-between gap-3"
+                >
+                  <dt className="text-muted">{row.label}</dt>
+                  <dd className="max-w-[58%] truncate text-right font-medium tabular-nums text-fg">
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-[10px] text-muted">
+              Telemetry {telemetry.quality}
+              {telemetryConnection === "simulated"
+                ? " · Simulated"
+                : telemetryConnection
+                  ? ` · ${telemetryConnection}`
+                  : ""}
+              {" · "}
+              {formatRelativeAge(telemetry.timestamp)}
+            </p>
+          </div>
+        ) : null}
+
+        {asset && conditionState ? (
+          <div className="mt-3 border-t border-edge pt-2">
+            <p className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.12em] text-accent">
+              <ClipboardCheck className="h-3 w-3" />
+              Condition
+            </p>
+            <dl className="space-y-1.5 text-[11px]">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Status</dt>
+                <dd
+                  className="font-medium"
+                  style={{
+                    color:
+                      CONDITION_COLORS[conditionRecord?.condition ?? "UNKNOWN"],
+                  }}
+                >
+                  {conditionLabel(conditionRecord?.condition ?? "UNKNOWN")}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Score</dt>
+                <dd className="font-medium tabular-nums text-fg">
+                  {conditionRecord?.score ?? "—"} / 100
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Last inspection</dt>
+                <dd className="font-medium tabular-nums text-fg">
+                  {lastInsp
+                    ? new Date(lastInsp.inspectionDate).toLocaleDateString()
+                    : "—"}
+                </dd>
+              </div>
+              {lastInsp ? (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">Type</dt>
+                  <dd className="font-medium text-fg">
+                    {INSPECTION_TYPE_LABELS[lastInsp.inspectionType]}
+                  </dd>
+                </div>
+              ) : null}
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Open findings</dt>
+                <dd className="font-medium tabular-nums text-fg">
+                  {assetDefects.length}
+                </dd>
+              </div>
+            </dl>
+            {assetDefects.length > 0 ? (
+              <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto border-t border-edge pt-2 text-[10px]">
+                {assetDefects.slice(0, 5).map((d) => (
+                  <li key={d.defectId}>
+                    <span
+                      className="font-semibold uppercase tracking-[0.08em]"
+                      style={{
+                        color:
+                          d.severity === "CRITICAL" || d.severity === "HIGH"
+                            ? "#f07167"
+                            : d.severity === "MEDIUM"
+                              ? "#e6740a"
+                              : "#94a3b8",
+                      }}
+                    >
+                      {d.severity}
+                    </span>{" "}
+                    <span className="text-fg">
+                      {d.description || d.defectType}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-[10px] text-muted">No open findings</p>
+            )}
+            {onAddInspection ? (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  className="w-full rounded-md bg-fill px-2 py-1.5 text-[11px] font-medium text-fg hover:bg-fill-strong"
+                  onClick={() => {
+                    setShowAddInspection((v) => !v);
+                    setInspError(null);
+                  }}
+                >
+                  {showAddInspection ? "Cancel inspection" : "Add inspection"}
+                </button>
+                {showAddInspection ? (
+                  <div className="mt-2 space-y-1.5 rounded-md border border-edge bg-fill/40 p-2">
+                    <label className="block text-[10px] text-muted">
+                      Type
+                      <select
+                        className="mt-0.5 h-7 w-full rounded border border-edge bg-page px-1 text-[11px] text-fg"
+                        value={inspType}
+                        onChange={(e) =>
+                          setInspType(e.target.value as InspectionType)
+                        }
+                      >
+                        {Object.entries(INSPECTION_TYPE_LABELS).map(
+                          ([k, label]) => (
+                            <option key={k} value={k}>
+                              {label}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+                    <label className="block text-[10px] text-muted">
+                      Condition
+                      <select
+                        className="mt-0.5 h-7 w-full rounded border border-edge bg-page px-1 text-[11px] text-fg"
+                        value={inspCondition}
+                        onChange={(e) =>
+                          setInspCondition(
+                            e.target.value as InspectionCondition,
+                          )
+                        }
+                      >
+                        {(
+                          [
+                            "GOOD",
+                            "MINOR_ISSUE",
+                            "DEGRADED",
+                            "CRITICAL",
+                            "UNKNOWN",
+                          ] as InspectionCondition[]
+                        ).map((c) => (
+                          <option key={c} value={c}>
+                            {conditionLabel(c)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <input
+                      value={inspFinding}
+                      onChange={(e) => setInspFinding(e.target.value)}
+                      placeholder="Finding (optional)"
+                      className="h-7 w-full rounded border border-edge bg-page px-1.5 text-[11px] text-fg"
+                    />
+                    <input
+                      value={inspNotes}
+                      onChange={(e) => setInspNotes(e.target.value)}
+                      placeholder="Notes (optional)"
+                      className="h-7 w-full rounded border border-edge bg-page px-1.5 text-[11px] text-fg"
+                    />
+                    {inspError ? (
+                      <p className="text-[10px] text-danger">{inspError}</p>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="w-full rounded-md bg-accent/15 px-2 py-1.5 text-[11px] font-medium text-accent"
+                      onClick={() => {
+                        if (!asset || !onAddInspection) return;
+                        const result = onAddInspection({
+                          assetId: asset.assetId,
+                          inspectionType: inspType,
+                          inspectionDate: new Date().toISOString(),
+                          condition: inspCondition,
+                          notes: inspNotes || undefined,
+                          finding: inspFinding || undefined,
+                        });
+                        if (!result.ok) {
+                          setInspError(result.error ?? "Failed");
+                          return;
+                        }
+                        setShowAddInspection(false);
+                        setInspNotes("");
+                        setInspFinding("");
+                        setInspError(null);
+                      }}
+                    >
+                      Save inspection
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {telemetry && conditionRecord ? (
+              <p className="mt-2 text-[10px] text-muted">
+                Operational {operationalStatusLabel(telemetry.status)} ·
+                Condition {conditionLabel(conditionRecord.condition)} — separate
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {asset && electrical && !electrical.error ? (
           <div className="mt-3 border-t border-edge pt-2">
@@ -396,6 +714,64 @@ function plantCountRows(model: AssetModel) {
     { label: "Fence", value: String(c.fences) },
     { label: "Gates", value: String(c.gates) },
   ];
+}
+
+function liveTelemetryRows(
+  snap: TelemetrySnapshot,
+): Array<{ label: string; value: string }> {
+  const m = snap.measurements;
+  const rows: Array<{ label: string; value: string }> = [
+    { label: "Status", value: operationalStatusLabel(snap.status) },
+  ];
+  if (m.activePower != null)
+    rows.push({ label: "AC Power", value: formatPowerKw(m.activePower) });
+  if (m.dcPower != null)
+    rows.push({ label: "DC Power", value: formatPowerKw(m.dcPower) });
+  if (m.dcVoltage != null)
+    rows.push({ label: "DC Voltage", value: formatVoltage(m.dcVoltage) });
+  if (m.dcCurrent != null)
+    rows.push({ label: "DC Current", value: formatCurrent(m.dcCurrent) });
+  if (m.acVoltage != null)
+    rows.push({ label: "AC Voltage", value: formatVoltage(m.acVoltage) });
+  if (m.acCurrent != null)
+    rows.push({ label: "AC Current", value: formatCurrent(m.acCurrent) });
+  if (m.voltage != null && m.acVoltage == null)
+    rows.push({ label: "Voltage", value: formatVoltage(m.voltage) });
+  if (m.current != null && m.acCurrent == null)
+    rows.push({ label: "Current", value: formatCurrent(m.current) });
+  if (m.temperature != null)
+    rows.push({ label: "Temperature", value: formatTempC(m.temperature) });
+  if (m.efficiency != null)
+    rows.push({ label: "Efficiency", value: formatPercent(m.efficiency) });
+  if (m.energyToday != null)
+    rows.push({ label: "Today", value: formatEnergyKwh(m.energyToday) });
+  if (m.loadPercent != null)
+    rows.push({ label: "Load", value: formatPercent(m.loadPercent) });
+  if (m.irradiance != null)
+    rows.push({ label: "GHI", value: formatIrradiance(m.irradiance) });
+  if (m.poaIrradiance != null)
+    rows.push({ label: "POA", value: formatIrradiance(m.poaIrradiance) });
+  if (m.windSpeed != null)
+    rows.push({ label: "Wind", value: formatWind(m.windSpeed) });
+  if (m.frequency != null)
+    rows.push({ label: "Frequency", value: formatFrequency(m.frequency) });
+  if (m.powerFactor != null)
+    rows.push({ label: "PF", value: formatPowerFactor(m.powerFactor) });
+  if (m.gridConnected != null)
+    rows.push({
+      label: "Grid",
+      value: m.gridConnected ? "Connected" : "Disconnected",
+    });
+  if (m.breakerClosed != null)
+    rows.push({
+      label: "Breaker",
+      value: m.breakerClosed ? "Closed" : "Open",
+    });
+  if (m.exportPower != null)
+    rows.push({ label: "Export", value: formatPowerKw(m.exportPower) });
+  rows.push({ label: "Last update", value: formatClock(snap.timestamp) });
+  rows.push({ label: "Quality", value: snap.quality });
+  return rows;
 }
 
 export function assetSummary(asset: Asset | null) {

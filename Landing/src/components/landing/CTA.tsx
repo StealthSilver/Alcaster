@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/Button";
-import { CONTACT_EMAIL, DEMO_APP_URL } from "@/lib/site";
+import { DEMO_APP_URL } from "@/lib/site";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { fadeUp, staggerContainer } from "@/lib/motion";
 
@@ -38,8 +38,7 @@ export function CTA() {
         variants={reduced ? undefined : fadeUp}
         className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-white/50 sm:text-base"
       >
-        Request a demo of the twin, SCADA, KPI, forecast, and ops workspace,
-        or reach out directly.
+        Request a demo of the twin, SCADA, KPI, forecast, and ops workspace.
       </motion.p>
       <motion.div
         variants={reduced ? undefined : fadeUp}
@@ -48,16 +47,7 @@ export function CTA() {
         <Button href={DEMO_APP_URL} target="_blank" variant="primary" size="lg">
           Request a Demo
         </Button>
-        <Button href={`mailto:${CONTACT_EMAIL}`} variant="secondary" size="lg">
-          Contact us
-        </Button>
       </motion.div>
-      <motion.p
-        variants={reduced ? undefined : fadeUp}
-        className="mt-8 font-mono text-[11px] tracking-[0.08em] text-white/30"
-      >
-        {CONTACT_EMAIL}
-      </motion.p>
     </motion.div>
   );
 }

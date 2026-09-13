@@ -33,7 +33,7 @@ export type TwinPlant = {
   areaAcres: number;
   latitude: number;
   longitude: number;
-  terrainType: "flat" | "mostly_flat" | "sloped" | "hilly" | "unknown";
+  terrainType: "flat" | "mostly_flat" | "sloped" | "hilly" | "mountainous" | "unknown";
   elevationM: number;
 
   solarTechnology: string;
@@ -171,6 +171,7 @@ export function resolveTwinPlant(
     i.terrainType === "mostly_flat" ||
     i.terrainType === "sloped" ||
     i.terrainType === "hilly" ||
+    i.terrainType === "mountainous" ||
     i.terrainType === "unknown"
       ? i.terrainType
       : "flat";

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/Button";
+import { HeroWindscape } from "@/components/landing/HeroWindscape";
 import { useLandingNav } from "@/components/landing/LandingNavContext";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { DEMO_APP_URL } from "@/lib/site";
@@ -17,7 +18,8 @@ export function Hero() {
       id="top"
       className="relative flex h-full min-h-0 flex-col overflow-hidden bg-transparent"
     >
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center px-5 pb-8 pt-24 text-center sm:px-8 sm:pt-28">
+      <HeroWindscape />
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center px-5 pb-24 pt-24 text-center sm:px-8 sm:pb-28 sm:pt-28">
         <motion.div
           variants={reduced ? undefined : staggerContainer}
           initial={reduced ? false : "hidden"}
