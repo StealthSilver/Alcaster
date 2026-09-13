@@ -9,7 +9,7 @@ import {
 } from "@/lib/labels";
 import { projectHomePath } from "@/lib/paths";
 
-import { panelClass, sectionHintClass, sectionTitleClass } from "./panel";
+import { panelClass, sectionTitleClass } from "./panel";
 
 type ProjectListProps = {
   projects: Project[];
@@ -21,11 +21,10 @@ export function ProjectList({ projects, showViewAll = false }: ProjectListProps)
   const navigate = useNavigate();
 
   return (
-    <section className={panelClass} aria-label="Projects">
+    <section className={panelClass} aria-label="Plants">
       <div className="flex items-center justify-between gap-3 border-b border-edge px-4 py-3">
         <div>
-          <h2 className={sectionTitleClass}>Projects</h2>
-          <p className={sectionHintClass}>Projects at this site</p>
+          <h2 className={sectionTitleClass}>Plants</h2>
         </div>
         {showViewAll ? (
           <Link
@@ -39,7 +38,7 @@ export function ProjectList({ projects, showViewAll = false }: ProjectListProps)
 
       {projects.length === 0 ? (
         <p className="px-4 py-8 text-sm text-muted">
-          No projects yet. Create a project to get started.
+          No plants yet. Create a plant to get started.
         </p>
       ) : (
         <ul className="divide-y divide-edge">

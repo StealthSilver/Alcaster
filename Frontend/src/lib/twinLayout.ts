@@ -130,32 +130,55 @@ export function buildTwinLayout(spec: TwinSpec, derived: TwinDerived): TwinLayou
       : Math.min(plant.tiltDeg, 18)
     : plant.tiltDeg) * (Math.PI / 180);
 
-  const blockCount = plant.blockCount;
+  const blockCount = Math.max(1, plant.blockCount);
   const blockCols = clamp(Math.round(Math.sqrt(blockCount * 1.4)), 1, 8);
   const blockRows = Math.ceil(blockCount / blockCols);
-  const roadW = Math.max(2.4, plant.roadWidthM);
-  const blockGap = Math.max(plant.blockGapM, plant.roads ? roadW + 2 : plant.blockGapM);
-  const setback = 10;
-  const yardD = plant.substationPresent
-    ? Math.max(28, Math.sqrt(Math.max(plant.substationAreaM2, 80)) + 16)
-    : 18;
-  const buildingBand = plant.controlRoom || plant.omBuilding || plant.warehouse ? 16 : 8;
-  const width = Math.sqrt(Math.max(plant.areaM2, 800) * 1.25);
-  const depth = Math.max(plant.areaM2, 800) / width;
-  const innerW = Math.max(24, width - setback * 2);
-  const innerD = Math.max(24, depth - setback - yardD - buildingBand);
-  const blockW = Math.max(along * 2, (innerW - (blockCols - 1) * blockGap) / blockCols);
-  const blockD = Math.max(across * 2, (innerD - (blockRows - 1) * blockGap) / blockRows);
-  const fitCols = Math.max(1, Math.floor((blockW + 0.2) / (along + Math.max(0.25, plant.tableToTableM))));
-  const fitRows = Math.max(1, Math.floor((blockD + 0.2) / (across + Math.max(0.8, plant.rowToRowM * 0.35))));
-  const tablesPerRow = Math.max(1, Math.min(plant.tablesPerRow, fitCols));
-  const rowsPerBlock = Math.max(1, Math.min(Math.ceil(plant.numberOfRows / blockRows), fitRows));
-  const pitchAlong = tablesPerRow > 1 ? blockW / tablesPerRow : along;
-  const pitchAcross = rowsPerBlock > 1 ? blockD / rowsPerBlock : across;
+  const roadW = Math.max(3.2, plant.roadWidthM);
+  const blockGap = Math.max(
+    plant.roads ? roadW + 4 : plant.blockGapM,
+    plant.blockGapM,
+  );
+
+  // Demo-sized array — fewer tables so the whole plant stays readable.
+  const gapAlong = Math.max(0.4, Math.min(plant.tableToTableM, 0.85));
+  const gapAcross = Math.max(2.8, Math.min(plant.rowToRowM * 0.48, 4.8));
+  const pitchAlong = along + gapAlong;
+  const pitchAcross = across + gapAcross;
+
+  const tablesPerRow = clamp(
+    Math.min(plant.tablesPerRow, Math.ceil(plant.tablesPerBlock / Math.max(1, plant.rowsPerBlock))),
+    5,
+    12,
+  );
+  const rowsPerBlock = clamp(
+    Math.min(
+      Math.ceil(plant.numberOfRows / blockRows),
+      Math.ceil(plant.tablesPerBlock / tablesPerRow),
+    ),
+    5,
+    10,
+  );
+
+  const padX = 2.8;
+  const padZ = 2.2;
+  const inverterBand = 5.5;
+  const blockW = tablesPerRow * pitchAlong - gapAlong + padX * 2;
+  const blockD = rowsPerBlock * pitchAcross - gapAcross + padZ * 2 + inverterBand;
+
   const arrayW = blockCols * blockW + (blockCols - 1) * blockGap;
+  const arrayD = blockRows * blockD + (blockRows - 1) * blockGap;
+  const setback = 6;
+  const yardD = plant.substationPresent
+    ? Math.max(20, Math.sqrt(Math.max(plant.substationAreaM2, 64)) + 10)
+    : 12;
+  const buildingBand = plant.controlRoom || plant.omBuilding || plant.warehouse ? 12 : 5;
+  const width = Math.max(arrayW + setback * 2, 48);
+  const depth = arrayD + setback + yardD + buildingBand;
+  const blockPadX = padX;
+  const blockPadZ = padZ;
   const originX = -arrayW / 2;
   const originZ = -depth / 2 + setback;
-  const visualCap = 1800;
+  const visualCap = 480;
   const plannedTables = blockCount * rowsPerBlock * tablesPerRow;
   const stride = Math.max(1, Math.ceil(plannedTables / visualCap));
 
@@ -181,8 +204,8 @@ export function buildTwinLayout(spec: TwinSpec, derived: TwinDerived): TwinLayou
 
       for (let r = 0; r < rowsPerBlock; r += 1) {
         for (let c = 0; c < tablesPerRow; c += 1) {
-          const x = bx + along / 2 + c * pitchAlong;
-          const z = bz + across / 2 + r * pitchAcross;
+          const x = bx + blockPadX + along / 2 + c * pitchAlong;
+          const z = bz + blockPadZ + across / 2 + r * pitchAcross;
           const logicalIndex = tableIndex + 1;
           const tableAssetId = formatAssetId(patterns.table, logicalIndex);
           tableRegistry.push({
@@ -234,8 +257,8 @@ export function buildTwinLayout(spec: TwinSpec, derived: TwinDerived): TwinLayou
       const invInBlock = Math.max(1, Math.ceil(remainingInv / remainingBlocks));
       for (let n = 0; n < invInBlock; n += 1) {
         const t = invInBlock === 1 ? 0.5 : n / (invInBlock - 1);
-        const invX = bx + 2 + t * Math.max(blockW - 4, 1);
-        const invZ = bz + blockD + 1.2;
+        const invX = bx + padX + t * Math.max(blockW - padX * 2, 1);
+        const invZ = bz + blockD - inverterBand * 0.45;
         const invNumber = inverterList.length + 1;
         const invId = formatAssetId(patterns.inverter, invNumber);
         inverterList.push({
@@ -260,7 +283,7 @@ export function buildTwinLayout(spec: TwinSpec, derived: TwinDerived): TwinLayou
         const comb = {
           x: avgX,
           y: 0,
-          z: bz + blockD - 1.4,
+          z: bz + blockD - inverterBand + 1.2,
           assetId: combId,
           label: combId,
         };
@@ -271,18 +294,23 @@ export function buildTwinLayout(spec: TwinSpec, derived: TwinDerived): TwinLayou
       }
 
       if (plant.roads) {
-        roads.push({
-          x: bx + blockW / 2,
-          z: bz + blockD + blockGap / 2,
-          w: blockW + blockGap,
-          d: roadW,
-        });
-        roads.push({
-          x: bx - blockGap / 2,
-          z: bz + blockD / 2,
-          w: roadW,
-          d: blockD,
-        });
+        // Corridor roads only — never draw a spine through the array field.
+        if (br < blockRows - 1 || blockRows === 1) {
+          roads.push({
+            x: bx + blockW / 2,
+            z: bz + blockD + blockGap / 2,
+            w: blockW + (bc < blockCols - 1 ? blockGap : 0),
+            d: Math.min(roadW, blockGap * 0.85),
+          });
+        }
+        if (bc > 0) {
+          roads.push({
+            x: bx - blockGap / 2,
+            z: bz + blockD / 2,
+            w: Math.min(roadW, blockGap * 0.85),
+            d: blockD + blockGap,
+          });
+        }
       }
 
       blockIndex += 1;
@@ -438,10 +466,22 @@ export function buildTwinLayout(spec: TwinSpec, derived: TwinDerived): TwinLayou
   }
 
   if (plant.roads) {
-    roads.push({ x: 0, z: 0, w: roadW, d: depth - 6 });
-    roads.push({ x: 0, z: yardZ, w: width - 10, d: roadW + 0.6 });
+    // Yard collector + access only (no full-depth road under panels).
+    roads.push({
+      x: 0,
+      z: yardZ,
+      w: Math.min(width - 12, arrayW + 16),
+      d: roadW + 0.8,
+    });
     if (plant.accessRoad) {
       roads.push({ x: 0, z: depth / 2 + 6, w: roadW + 2, d: 16 });
+      // Short stub from yard to gate — stays south of the array.
+      roads.push({
+        x: 0,
+        z: (yardZ + depth / 2) / 2,
+        w: roadW,
+        d: Math.max(8, depth / 2 - yardZ + 4),
+      });
     }
   }
   roads.forEach((road, index) => {

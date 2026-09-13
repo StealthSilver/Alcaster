@@ -1,9 +1,9 @@
 export const LANDING_PANELS = [
   { id: "top", label: "Home", inNav: true },
   { id: "platform", label: "Platform", inNav: true },
-  { id: "solutions", label: "Solutions", inNav: true },
-  { id: "technology", label: "Technology", inNav: true },
-  { id: "resources", label: "Resources", inNav: true },
+  { id: "solutions", label: "Modules", inNav: true },
+  { id: "technology", label: "Process", inNav: true },
+  { id: "resources", label: "Operate", inNav: true },
   { id: "contact", label: "Contact", inNav: true },
 ] as const;
 

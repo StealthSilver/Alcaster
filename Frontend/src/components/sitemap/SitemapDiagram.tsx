@@ -135,7 +135,7 @@ export function SitemapDiagram({
       viewBox={`0 0 ${view.width} ${view.height}`}
       className="h-full w-full"
       role="img"
-      aria-label="Project sitemap single-line diagram"
+      aria-label="Plant sitemap single-line diagram"
       onMouseLeave={() => onHover(null)}
     >
       <defs>
@@ -190,28 +190,34 @@ export function SitemapDiagram({
       <CableLayer
         paths={layout.dcStrings}
         view={view}
-        stroke="rgba(230,116,10,0.16)"
+        stroke="rgba(230,116,10,0.18)"
         width={0.08}
+        flow
+        flowStroke="rgba(255,177,74,0.55)"
       />
       <CableLayer
         paths={layout.dcFeeders}
         view={view}
-        stroke="rgba(230,116,10,0.28)"
+        stroke="rgba(230,116,10,0.32)"
         width={0.12}
+        flow
+        flowStroke="rgba(255,177,74,0.75)"
       />
       <CableLayer
         paths={layout.acCables}
         view={view}
-        stroke="color-mix(in srgb, var(--alcaster-fg) 16%, transparent)"
+        stroke="rgba(59,130,246,0.35)"
         width={0.16}
         flow
+        flowStroke="rgba(147,197,253,0.85)"
       />
       <CableLayer
         paths={layout.hvCables}
         view={view}
-        stroke="rgba(230,116,10,0.55)"
+        stroke="rgba(139,92,246,0.45)"
         width={0.22}
         flow
+        flowStroke="rgba(196,181,253,0.9)"
       />
 
       <ZoneLabel
@@ -341,12 +347,14 @@ function CableLayer({
   stroke,
   width,
   flow = false,
+  flowStroke = "rgba(230,116,10,0.7)",
 }: {
   paths: Vec3[][];
   view: ViewBox;
   stroke: string;
   width: number;
   flow?: boolean;
+  flowStroke?: string;
 }) {
   return (
     <g pointerEvents="none">
@@ -359,7 +367,7 @@ function CableLayer({
               <path
                 d={d}
                 fill="none"
-                stroke="rgba(230,116,10,0.7)"
+                stroke={flowStroke}
                 strokeWidth={width * 0.7}
                 strokeDasharray="1.4 2.2"
                 className="alcaster-flow-dash"

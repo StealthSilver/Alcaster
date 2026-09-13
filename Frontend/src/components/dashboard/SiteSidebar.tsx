@@ -1,5 +1,4 @@
 import {
-  AlertTriangle,
   FileText,
   FolderKanban,
   LayoutDashboard,
@@ -18,9 +17,8 @@ const siteNav: SidebarNavItem[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard, match: "dashboard" },
   { href: "/sites", label: "Sites", Icon: MapPin },
   { href: "/map", label: "Map", Icon: Map },
-  { href: "/projects", label: "Projects", Icon: FolderKanban },
+  { href: "/projects", label: "Plants", Icon: FolderKanban },
   { href: "/team", label: "Team", Icon: Users },
-  { href: "/alerts", label: "Alerts", Icon: AlertTriangle },
   { href: "/reports", label: "Reports", Icon: FileText },
   { href: "/settings", label: "Settings", Icon: Settings },
 ];
@@ -43,17 +41,18 @@ export function SiteSidebar({ open, onClose }: SiteSidebarProps) {
         aria-hidden={!open}
       />
 
-      <div className="relative z-50 hidden w-14 shrink-0 lg:block">
-        <aside
-          className="group/site absolute inset-y-0 left-0 flex w-14 flex-col overflow-hidden border-r border-edge bg-nav transition-[width] duration-200 ease-out hover:w-56 hover:overflow-visible"
-          aria-label="Site navigation"
-        >
-          <SiteNav pathname={pathname} onClose={onClose} rail />
-        </aside>
-      </div>
+      {/* Desktop spacer keeps layout width; rail is fixed so hover expand paints above plant sidebar */}
+      <div className="relative hidden h-full w-14 shrink-0 lg:block" aria-hidden />
 
       <aside
-        className={`fixed top-14 bottom-0 left-0 z-50 flex w-56 flex-col border-r border-edge bg-nav transition-transform duration-300 ease-out lg:hidden ${
+        className="group/site fixed top-14 bottom-0 left-0 z-[80] hidden w-14 flex-col overflow-hidden border-r border-edge bg-nav shadow-[2px_0_10px_rgba(0,0,0,0.12)] transition-[width] duration-200 ease-out hover:w-56 hover:overflow-visible lg:flex"
+        aria-label="Site navigation"
+      >
+        <SiteNav pathname={pathname} onClose={onClose} rail />
+      </aside>
+
+      <aside
+        className={`fixed top-14 bottom-0 left-0 z-[80] flex w-56 flex-col overflow-hidden border-r border-edge bg-nav transition-transform duration-300 ease-out lg:hidden ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         aria-label="Site navigation"
@@ -85,7 +84,7 @@ function SiteNav({
   rail?: boolean;
 }) {
   return (
-    <nav className="flex flex-1 flex-col px-2 py-3">
+    <nav className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-3">
       <ul className="space-y-0.5">
         {siteNav.map((item) => {
           const active = isNavActive(pathname, item.href, item.match);

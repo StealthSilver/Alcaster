@@ -9,7 +9,6 @@ import { panelClass } from "./panel";
 type PortfolioGenerationProps = {
   series: GenerationPoint[];
   title?: string;
-  subtitle?: string;
 };
 
 const WIDTH = 720;
@@ -34,7 +33,6 @@ function buildPath(
 export function PortfolioGeneration({
   series,
   title = "Portfolio Generation",
-  subtitle = "Actual vs Forecast",
 }: PortfolioGenerationProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -92,7 +90,6 @@ export function PortfolioGeneration({
           <h2 className="text-sm font-semibold text-fg">
             {title}
           </h2>
-          <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-[11px] font-medium text-muted">
           <LegendDot color="#e6740a" label="Actual" />

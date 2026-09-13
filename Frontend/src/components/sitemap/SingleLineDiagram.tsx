@@ -1,7 +1,42 @@
 import { useMemo } from "react";
 
 import type { AssetModel } from "@/lib/assetModel";
+import type { ElectricalConnectionType } from "@/lib/electricalModel";
 import { buildSldModel, type SldLevel, type SldNode } from "@/lib/sldModel";
+
+function edgeStroke(type?: ElectricalConnectionType): string {
+  switch (type) {
+    case "SERIES":
+      return "rgba(251, 146, 60, 0.9)";
+    case "DC":
+      return "rgba(230, 116, 10, 0.9)";
+    case "AC_LV":
+      return "rgba(245, 158, 11, 0.9)";
+    case "AC_MV":
+      return "rgba(59, 130, 246, 0.9)";
+    case "HV":
+      return "rgba(139, 92, 246, 0.9)";
+    default:
+      return "rgba(230, 116, 10, 0.75)";
+  }
+}
+
+function edgeFlow(type?: ElectricalConnectionType): string {
+  switch (type) {
+    case "SERIES":
+      return "#fdba74";
+    case "DC":
+      return "#ffb14a";
+    case "AC_LV":
+      return "#fcd34d";
+    case "AC_MV":
+      return "#93c5fd";
+    case "HV":
+      return "#c4b5fd";
+    default:
+      return "#ffb14a";
+  }
+}
 
 type SingleLineDiagramProps = {
   model: AssetModel;
@@ -10,17 +45,16 @@ type SingleLineDiagramProps = {
   level?: SldLevel;
   blockAssetId?: string | null;
   onSelect: (assetId: string) => void;
-  onLevelChange?: (level: SldLevel) => void;
 };
 
-export function SingleLineDiagram({
+/** Intrinsic-size SLD canvas for use inside DiagramViewport. */
+export function SingleLineDiagramCanvas({
   model,
   selectedAssetId,
   highlightedIds,
   level = "plant",
   blockAssetId = null,
   onSelect,
-  onLevelChange,
 }: SingleLineDiagramProps) {
   const sld = useMemo(
     () =>
@@ -34,7 +68,7 @@ export function SingleLineDiagram({
 
   if (!sld) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted">
+      <div className="flex h-48 w-[32rem] items-center justify-center text-sm text-muted">
         Electrical topology not available
       </div>
     );
@@ -43,68 +77,71 @@ export function SingleLineDiagram({
   const highlight = highlightedIds ?? sld.pathAssetIds;
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center gap-2 border-b border-edge px-3 py-2">
-        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
-          Single-line diagram
-        </p>
-        <div className="ml-auto flex gap-1">
-          {(["plant", "block", "asset"] as SldLevel[]).map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onLevelChange?.(id)}
-              className={`rounded-md px-2 py-1 text-[10px] font-medium capitalize ${
-                level === id
-                  ? "bg-fill-strong text-fg"
-                  : "text-muted hover:text-fg"
-              }`}
-            >
-              {id}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto bg-[color-mix(in_oklab,var(--alcaster-page)_92%,#1a1f24)]">
-        <svg
-          viewBox={`0 0 ${sld.width} ${sld.height}`}
-          className="h-full min-h-[420px] w-full"
-          role="img"
-          aria-label="Electrical single-line diagram"
-        >
-          {sld.edges.map((edge) => {
-            const from = sld.nodes.find((n) => n.id === edge.fromId);
-            const to = sld.nodes.find((n) => n.id === edge.toId);
-            if (!from || !to) return null;
-            const active =
-              (highlight.has(from.assetId) && highlight.has(to.assetId)) ||
-              (edge.connectionId && sld.pathConnectionIds.has(edge.connectionId));
-            return (
-              <line
-                key={edge.id}
-                x1={from.x}
-                y1={from.y + from.h / 2}
-                x2={to.x}
-                y2={to.y - to.h / 2}
-                stroke={active ? "var(--alcaster-accent)" : "var(--alcaster-edge-strong)"}
-                strokeWidth={active ? 2.2 : 1.1}
-                opacity={highlight.size > 0 && !active ? 0.28 : 0.85}
-              />
-            );
-          })}
-          {sld.nodes.map((node) => (
-            <SldNodeMark
-              key={node.id}
-              node={node}
-              selected={selectedAssetId === node.assetId}
-              highlighted={highlight.has(node.assetId) || Boolean(node.memberIds?.some((id) => highlight.has(id)))}
-              dimmed={highlight.size > 0}
-              onSelect={onSelect}
+    <svg
+      width={sld.width}
+      height={sld.height}
+      viewBox={`0 0 ${sld.width} ${sld.height}`}
+      className="block max-w-none shrink-0 rounded-lg"
+      role="img"
+      aria-label="Electrical single-line diagram"
+      style={{
+        background:
+          "color-mix(in oklab, var(--alcaster-page) 92%, #1a1f24)",
+      }}
+    >
+      {sld.edges.map((edge) => {
+        const from = sld.nodes.find((n) => n.id === edge.fromId);
+        const to = sld.nodes.find((n) => n.id === edge.toId);
+        if (!from || !to) return null;
+        const active =
+          (highlight.has(from.assetId) && highlight.has(to.assetId)) ||
+          (edge.connectionId && sld.pathConnectionIds.has(edge.connectionId));
+        const x1 = from.x;
+        const y1 = from.y + from.h / 2;
+        const x2 = to.x;
+        const y2 = to.y - to.h / 2;
+        const stroke = active
+          ? "var(--alcaster-accent)"
+          : edgeStroke(edge.connectionType);
+        const opacity = highlight.size > 0 && !active ? 0.22 : 0.95;
+        return (
+          <g key={edge.id} opacity={opacity}>
+            <line
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              stroke={stroke}
+              strokeWidth={active ? 2.8 : 2}
+              strokeOpacity={active ? 1 : 0.45}
             />
-          ))}
-        </svg>
-      </div>
-    </div>
+            <line
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              stroke={active ? "var(--alcaster-accent)" : edgeFlow(edge.connectionType)}
+              strokeWidth={active ? 2.2 : 1.6}
+              strokeDasharray="7 9"
+              className="alcaster-flow-dash"
+            />
+          </g>
+        );
+      })}
+      {sld.nodes.map((node) => (
+        <SldNodeMark
+          key={node.id}
+          node={node}
+          selected={selectedAssetId === node.assetId}
+          highlighted={
+            highlight.has(node.assetId) ||
+            Boolean(node.memberIds?.some((id) => highlight.has(id)))
+          }
+          dimmed={highlight.size > 0}
+          onSelect={onSelect}
+        />
+      ))}
+    </svg>
   );
 }
 
@@ -145,10 +182,10 @@ function SldNodeMark({
         y={node.y - node.h / 2}
         width={node.w}
         height={node.h}
-        rx={6}
+        rx={8}
         fill={fill}
         stroke={stroke}
-        strokeWidth={selected ? 2 : 1.2}
+        strokeWidth={selected ? 2.4 : 1.5}
       />
       <text
         x={node.x}
@@ -156,24 +193,24 @@ function SldNodeMark({
         textAnchor="middle"
         dominantBaseline="middle"
         fill="var(--alcaster-fg)"
-        fontSize={10}
+        fontSize={13}
         fontWeight={600}
       >
         {node.count != null && node.type === "AGGREGATE"
           ? `${node.count}`
-          : node.label.length > 12
-            ? `${node.label.slice(0, 10)}…`
+          : node.label.length > 14
+            ? `${node.label.slice(0, 12)}…`
             : node.label}
       </text>
       {node.type === "AGGREGATE" ? (
         <text
           x={node.x}
-          y={node.y + node.h / 2 + 12}
+          y={node.y + node.h / 2 + 16}
           textAnchor="middle"
           fill="var(--alcaster-muted)"
-          fontSize={8}
+          fontSize={11}
         >
-          {node.label.length > 28 ? `${node.label.slice(0, 26)}…` : node.label}
+          {node.label.length > 32 ? `${node.label.slice(0, 30)}…` : node.label}
         </text>
       ) : null}
     </g>

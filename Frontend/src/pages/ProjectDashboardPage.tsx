@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { DashboardShell, ProjectDashboard } from "@/components/dashboard";
+import {
+  CmsBreadcrumbs,
+  CmsDashboardActions,
+  DashboardShell,
+  ProjectDashboard,
+} from "@/components/dashboard";
 import { useAuth } from "@/context/AuthContext";
 import { useSyncProjectFromRoute } from "@/hooks/useSyncProjectFromRoute";
 import {
@@ -33,7 +38,7 @@ export function ProjectDashboardPage() {
         setError(
           caught instanceof ApiError
             ? caught.message
-            : "Unable to load this project.",
+            : "Unable to load this plant.",
         );
       })
       .finally(() => {
@@ -53,10 +58,26 @@ export function ProjectDashboardPage() {
   return (
     <DashboardShell
       user={shellUser}
-      title={project?.name ?? "Project"}
+      hideSiteMeta
+      title={
+        project ? (
+          <CmsBreadcrumbs
+            projectId={project.id}
+            plantName={project.name}
+            current="Home"
+          />
+        ) : (
+          "Plant"
+        )
+      }
+      actions={
+        projectId ? (
+          <CmsDashboardActions projectId={projectId} active="cms" />
+        ) : null
+      }
     >
       {loading ? (
-        <p className="text-sm text-muted">Loading project…</p>
+        <p className="text-sm text-muted">Loading plant…</p>
       ) : error ? (
         <p className="rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}

@@ -1,12 +1,19 @@
 import {
   Activity,
+  Bell,
   Box,
+  Briefcase,
+  Calculator,
+  ClipboardList,
+  Database,
   Gauge,
   LayoutDashboard,
   LineChart,
+  ListOrdered,
   Map,
-  Radio,
   Settings,
+  Wrench,
+  Zap,
   X,
 } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
@@ -23,31 +30,79 @@ type NavGroup = {
   items: SidebarNavItem[];
 };
 
-function projectGroups(base: string): NavGroup[] {
+function plantGroups(base: string): NavGroup[] {
   return [
+    {
+      id: "data-entry",
+      label: "Data Entry",
+      items: [
+        {
+          href: `${base}/data-entry`,
+          label: "Product intake",
+          Icon: ClipboardList,
+        },
+      ],
+    },
     {
       id: "overview",
       label: "Overview",
       items: [
-        { href: base, label: "Dashboard", Icon: LayoutDashboard, match: "exact" },
+        { href: `${base}/portfolio`, label: "Portfolio", Icon: Briefcase },
+        {
+          href: base,
+          label: "Dashboard (CMS)",
+          Icon: LayoutDashboard,
+          match: "exact",
+        },
+        { href: `${base}/kpi`, label: "KPI dashboard", Icon: Activity },
+        {
+          href: `${base}/performance`,
+          label: "Performance",
+          Icon: LineChart,
+        },
       ],
     },
     {
-      id: "plant",
-      label: "Plant",
+      id: "monitoring",
+      label: "Monitoring",
       items: [
         { href: `${base}/scada`, label: "SCADA", Icon: Gauge },
-        { href: `${base}/digital-twin`, label: "Digital twin", Icon: Box },
-        { href: `${base}/sitemap`, label: "Sitemap", Icon: Map },
-        { href: `${base}/analytics`, label: "Analytics", Icon: Activity },
-        { href: `${base}/monitoring`, label: "Monitoring", Icon: Radio },
+        { href: `${base}/alerts`, label: "Alerts", Icon: Bell },
+        { href: `${base}/events`, label: "Events", Icon: ListOrdered },
       ],
     },
     {
-      id: "insights",
-      label: "Insights",
+      id: "analytics",
+      label: "Analytics & planning",
       items: [
         { href: `${base}/forecasting`, label: "Forecasting", Icon: LineChart },
+        {
+          href: `${base}/data-explorer`,
+          label: "Data Explorer",
+          Icon: Database,
+        },
+        {
+          href: `${base}/rule-engine`,
+          label: "Rule Engine",
+          Icon: Calculator,
+        },
+      ],
+    },
+    {
+      id: "operations",
+      label: "Operations",
+      items: [
+        { href: `${base}/cmms`, label: "CMMS", Icon: Wrench },
+        { href: `${base}/ems`, label: "EMS", Icon: Zap },
+      ],
+    },
+    {
+      id: "digital-twin",
+      label: "Digital twin",
+      items: [
+        { href: `${base}/digital-twin`, label: "Plant twin", Icon: Box },
+        { href: `${base}/sitemap`, label: "Sitemap", Icon: Map },
+        { href: `${base}/analytics`, label: "Analytics", Icon: Activity },
       ],
     },
   ];
@@ -66,7 +121,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
     selectedProject ?? projects.find((item) => item.id === projectId) ?? null;
   const id = project?.id ?? projectId ?? "";
   const base = id ? projectHomePath(id) : "/projects";
-  const groups = projectGroups(base);
+  const groups = plantGroups(base);
   const settingsHref = id ? `${base}/settings` : "/settings";
   const settingsActive =
     pathname === settingsHref || pathname.startsWith(`${settingsHref}/`);
@@ -82,12 +137,12 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
       />
 
       <aside
-        className={`fixed top-14 bottom-0 left-0 z-30 flex w-56 flex-col border-r border-edge bg-nav transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${
+        className={`fixed top-14 bottom-0 left-0 z-30 flex w-56 flex-col overflow-hidden border-r border-edge bg-nav transition-transform duration-300 ease-out lg:static lg:z-10 lg:h-full lg:shrink-0 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
-        aria-label="Project navigation"
+        aria-label="Plant navigation"
       >
-        <div className="flex justify-end border-b border-edge px-3 py-2 lg:hidden">
+        <div className="flex shrink-0 justify-end border-b border-edge px-3 py-2 lg:hidden">
           <button
             type="button"
             onClick={onClose}
@@ -98,8 +153,8 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col overflow-y-auto px-2 py-3">
-          <div className="space-y-4">
+        <nav className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-3">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain [scrollbar-width:thin]">
             {groups.map((group) => (
               <NavSection
                 key={group.id}
@@ -110,7 +165,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
             ))}
           </div>
 
-          <div className="mt-3 border-t border-edge pt-2">
+          <div className="mt-3 shrink-0 border-t border-edge pt-2">
             <Link
               to={settingsHref}
               onClick={onClose}

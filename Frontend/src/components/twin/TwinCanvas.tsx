@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
-import { Vector3 } from "three";
+import { PerspectiveCamera, Vector3 } from "three";
 
 import { useTheme } from "@/context/ThemeContext";
 import {
@@ -11,9 +11,16 @@ import {
   type AssetModel,
 } from "@/lib/assetModel";
 import type { TwinRecord } from "@/lib/api";
+import type { ElectricalConnectionType } from "@/lib/electricalModel";
 import { buildTwinLayout } from "@/lib/twinLayout";
 
 import { SiteModel } from "./SiteModel";
+
+type TwinElectricalPath = {
+  points: [number, number, number][];
+  active?: boolean;
+  connectionType?: ElectricalConnectionType;
+};
 
 type TwinCanvasProps = {
   twin: TwinRecord;
@@ -29,6 +36,41 @@ type ControlsLike = {
   target: Vector3;
   update: () => void;
 };
+
+function CanvasResizeSync() {
+  const camera = useThree((state) => state.camera);
+  const gl = useThree((state) => state.gl);
+
+  useEffect(() => {
+    function sync() {
+      const parent = gl.domElement.parentElement;
+      if (!parent) return;
+      const width = parent.clientWidth;
+      const height = parent.clientHeight;
+      if (width < 1 || height < 1) return;
+      gl.setSize(width, height, false);
+      if (camera instanceof PerspectiveCamera) {
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    sync();
+    document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync as EventListener);
+    window.addEventListener("resize", sync);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        sync as EventListener,
+      );
+      window.removeEventListener("resize", sync);
+    };
+  }, [camera, gl]);
+
+  return null;
+}
 
 function CameraFocus({
   assets,
@@ -89,7 +131,8 @@ export function TwinCanvas({
   const layout = useMemo(() => buildTwinLayout(twin.spec, twin.derived), [twin]);
   const plant = layout.plant;
   const span = Math.max(layout.width, layout.depth, 40);
-  const viewScale = 132 / span;
+  // Keep the plant smaller in frame so equipment + pathways stay clear.
+  const viewScale = 78 / span;
   const night = plant.dayNight === "night";
   const dusk = plant.dayNight === "dusk";
   const canvasBg = night
@@ -104,22 +147,41 @@ export function TwinCanvas({
     const electrical = assets.electrical;
     if (!electrical) return [];
     const highlight = highlightedAssetIds;
-    const paths: Array<{ points: [number, number, number][]; active?: boolean }> =
-      [];
-    const limit = electricalMode ? 120 : 40;
-    for (const conn of electrical.connections) {
-      if (!conn.path3d || conn.path3d.length < 2) continue;
+    const ranked = [...electrical.connections]
+      .filter((conn) => conn.path3d && conn.path3d.length >= 2)
+      .sort((a, b) => {
+        const rank = (type: string) => {
+          if (type === "HV") return 0;
+          if (type === "AC_MV") return 1;
+          if (type === "AC_LV") return 2;
+          if (type === "DC") return 3;
+          return 4;
+        };
+        return rank(a.connectionType) - rank(b.connectionType);
+      });
+    const paths: TwinElectricalPath[] = [];
+    const limit = electricalMode ? 180 : 48;
+    for (const conn of ranked) {
       const active = Boolean(
         highlight &&
           highlight.has(conn.fromAssetId) &&
           highlight.has(conn.toAssetId),
       );
       if (!electricalMode && !active) continue;
+      // In overview, skip dense module series links — show current pathways.
+      if (
+        electricalMode &&
+        conn.connectionType === "SERIES" &&
+        paths.length > 40
+      ) {
+        continue;
+      }
       paths.push({
-        points: conn.path3d.map(
+        points: conn.path3d!.map(
           (p) => [p.x, p.y, p.z] as [number, number, number],
         ),
         active,
+        connectionType: conn.connectionType,
       });
       if (paths.length >= limit) break;
     }
@@ -132,8 +194,8 @@ export function TwinCanvas({
       shadows={plant.visualStyle !== "simple"}
       dpr={1}
       camera={{
-        position: [36, 118, 102],
-        fov: 40,
+        position: [28, 58, 72],
+        fov: 42,
         near: 0.2,
         far: 800,
       }}
@@ -146,6 +208,7 @@ export function TwinCanvas({
       }}
     >
       <color attach="background" args={[canvasBg]} />
+      <CanvasResizeSync />
       <hemisphereLight
         args={
           night
@@ -178,11 +241,11 @@ export function TwinCanvas({
       <OrbitControls
         makeDefault
         enablePan
-        minDistance={24}
-        maxDistance={240}
-        minPolarAngle={0.18}
-        maxPolarAngle={Math.PI / 2.12}
-        target={[0, 0, 12]}
+        minDistance={14}
+        maxDistance={140}
+        minPolarAngle={0.22}
+        maxPolarAngle={Math.PI / 2.18}
+        target={[0, 0, layout.depth * viewScale * 0.06]}
       />
       <CameraFocus
         assets={assets}

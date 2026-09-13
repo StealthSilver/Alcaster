@@ -1,20 +1,32 @@
 "use no memo";
 
 import { useLayoutEffect, useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import {
+  BufferGeometry,
   CanvasTexture,
   CatmullRomCurve3,
   Color,
   Euler,
+  Float32BufferAttribute,
   InstancedMesh,
+  LineDashedMaterial,
+  LineSegments as ThreeLineSegments,
   Object3D,
   SRGBColorSpace,
   TubeGeometry,
   Vector3,
 } from "three";
 
+import type { ElectricalConnectionType } from "@/lib/electricalModel";
 import type { TwinLayout } from "@/lib/twinLayout";
 import type { TwinPlant } from "@/lib/twinPlant";
+
+type TwinElectricalPath = {
+  points: [number, number, number][];
+  active?: boolean;
+  connectionType?: ElectricalConnectionType;
+};
 
 const dummy = new Object3D();
 const HIGHLIGHT = "#e6740a";
@@ -267,7 +279,8 @@ function Tables({
   layout,
   selectedAssetId,
   onSelectAsset,
-}: { layout: TwinLayout } & SelectableProps) {
+  electricalMode = false,
+}: { layout: TwinLayout; electricalMode?: boolean } & SelectableProps) {
   const meshRef = useRef<InstancedMesh>(null);
   const frameRef = useRef<InstancedMesh>(null);
   const postRef = useRef<InstancedMesh>(null);
@@ -363,16 +376,30 @@ function Tables({
           roughness={0.28}
           emissive={new Color(colors.module.glow)}
           emissiveIntensity={plant.dayNight === "night" ? 0.08 : 0.16}
+          transparent={electricalMode}
+          opacity={electricalMode ? 0.55 : 1}
         />
       </instancedMesh>
       <instancedMesh ref={frameRef} args={[undefined, undefined, tables.length]}>
         <boxGeometry args={[sample.along, thick, sample.across]} />
-        <meshStandardMaterial color={colors.structure} metalness={0.65} roughness={0.35} />
+        <meshStandardMaterial
+          color={colors.structure}
+          metalness={0.65}
+          roughness={0.35}
+          transparent={electricalMode}
+          opacity={electricalMode ? 0.5 : 1}
+        />
       </instancedMesh>
       {posts.length > 0 ? (
         <instancedMesh ref={postRef} args={[undefined, undefined, posts.length]}>
           <boxGeometry args={[0.07, 1.1, 0.07]} />
-          <meshStandardMaterial color={colors.structure} metalness={0.55} roughness={0.4} />
+          <meshStandardMaterial
+            color={colors.structure}
+            metalness={0.55}
+            roughness={0.4}
+            transparent={electricalMode}
+            opacity={electricalMode ? 0.45 : 1}
+          />
         </instancedMesh>
       ) : null}
       {selectedIndex >= 0 ? (
@@ -413,9 +440,11 @@ function Tables({
 function CableBatch({
   paths,
   color,
+  opacity = 1,
 }: {
   paths: TwinLayout["dcStrings"];
   color: string;
+  opacity?: number;
 }) {
   const positions = useMemo(() => {
     const segs: number[] = [];
@@ -437,8 +466,132 @@ function CableBatch({
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <lineBasicMaterial color={color} />
+      <lineBasicMaterial
+        color={color}
+        transparent={opacity < 1}
+        opacity={opacity}
+        depthTest
+      />
     </lineSegments>
+  );
+}
+
+/** Animated current flow — computeLineDistances on LineSegments (not BufferGeometry). */
+function FlowCableOverlay({
+  paths,
+  color,
+  opacity = 0.75,
+  speed = 1.6,
+}: {
+  paths: TwinLayout["dcStrings"];
+  color: string;
+  opacity?: number;
+  speed?: number;
+}) {
+  const lineRef = useRef<ThreeLineSegments>(null);
+  const matRef = useRef<LineDashedMaterial>(null);
+
+  const geometry = useMemo(() => {
+    const segs: number[] = [];
+    for (const path of paths) {
+      for (let i = 0; i < path.length - 1; i += 1) {
+        const a = path[i];
+        const b = path[i + 1];
+        if (!a || !b) continue;
+        segs.push(a[0], a[1], a[2], b[0], b[1], b[2]);
+      }
+    }
+    if (segs.length < 6) return null;
+    const geom = new BufferGeometry();
+    geom.setAttribute("position", new Float32BufferAttribute(segs, 3));
+    return geom;
+  }, [paths]);
+
+  useLayoutEffect(() => {
+    const line = lineRef.current;
+    if (!line || !geometry) return;
+    line.computeLineDistances();
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  useLayoutEffect(() => {
+    const mat = matRef.current;
+    if (!mat) return;
+    const previous = mat.onBeforeCompile;
+    mat.onBeforeCompile = (shader, renderer) => {
+      previous.call(mat, shader, renderer);
+      shader.uniforms.dashOffset = { value: 0 };
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          "uniform float dashSize;",
+          "uniform float dashSize;\n\tuniform float dashOffset;",
+        )
+        .replace(
+          "mod( vLineDistance, totalSize ) > dashSize",
+          "mod( vLineDistance + dashOffset, totalSize ) > dashSize",
+        );
+      mat.userData.dashShader = shader;
+    };
+    mat.needsUpdate = true;
+  }, []);
+
+  useFrame((_, delta) => {
+    const shader = matRef.current?.userData.dashShader as
+      | { uniforms: { dashOffset: { value: number } } }
+      | undefined;
+    if (!shader) return;
+    shader.uniforms.dashOffset.value -= delta * speed;
+  });
+
+  if (!geometry) return null;
+
+  return (
+    <lineSegments ref={lineRef} geometry={geometry}>
+      <lineDashedMaterial
+        ref={matRef}
+        color={color}
+        dashSize={1.35}
+        gapSize={1.05}
+        transparent
+        opacity={opacity}
+        depthWrite={false}
+      />
+    </lineSegments>
+  );
+}
+
+const CABLE_STYLE: Record<string, { color: string; glow: string; opacity: number }> = {
+  SERIES: { color: "#f97316", glow: "#fdba74", opacity: 0.7 },
+  DC: { color: "#e6740a", glow: "#ffb14a", opacity: 0.85 },
+  AC_LV: { color: "#f59e0b", glow: "#fde68a", opacity: 0.82 },
+  AC_MV: { color: "#3b82f6", glow: "#93c5fd", opacity: 0.88 },
+  HV: { color: "#8b5cf6", glow: "#c4b5fd", opacity: 0.9 },
+};
+
+function TypedCableBatch({
+  paths,
+  connectionType,
+  active = false,
+}: {
+  paths: TwinLayout["dcStrings"];
+  connectionType?: ElectricalConnectionType;
+  active?: boolean;
+}) {
+  const style = CABLE_STYLE[connectionType ?? "DC"] ?? CABLE_STYLE.DC!;
+  const base = active ? "#e6740a" : style.color;
+  const glow = active ? "#ffd089" : style.glow;
+  return (
+    <group>
+      <CableBatch paths={paths} color={base} opacity={active ? 0.95 : style.opacity * 0.55} />
+      <FlowCableOverlay
+        paths={paths}
+        color={glow}
+        opacity={active ? 0.9 : 0.72}
+        speed={active ? 2.4 : 1.55}
+      />
+    </group>
   );
 }
 
@@ -500,7 +653,7 @@ function Electrical({
   electricalMode,
 }: {
   layout: TwinLayout;
-  electricalPaths?: Array<{ points: [number, number, number][]; active?: boolean }>;
+  electricalPaths?: TwinElectricalPath[];
   highlightedIds?: Set<string> | null;
   electricalMode?: boolean;
 }) {
@@ -519,10 +672,15 @@ function Electrical({
       : null;
 
   const activePaths = (electricalPaths ?? []).filter((p) => p.active);
-  const idlePaths =
-    electricalMode
-      ? (electricalPaths ?? []).filter((p) => !p.active).slice(0, 80)
-      : [];
+  const idleByType = new Map<ElectricalConnectionType, TwinLayout["dcStrings"]>();
+  if (electricalMode) {
+    for (const path of (electricalPaths ?? []).filter((p) => !p.active).slice(0, 140)) {
+      const type = path.connectionType ?? "DC";
+      const list = idleByType.get(type) ?? [];
+      list.push(path.points);
+      idleByType.set(type, list);
+    }
+  }
 
   return (
     <group>
@@ -532,7 +690,7 @@ function Electrical({
           <mesh
             key={`duct-${i}`}
             rotation={[-Math.PI / 2, 0, 0]}
-            position={[road.x, 0.058, road.z]}
+            position={[road.x, 0.06, road.z]}
             receiveShadow
           >
             <planeGeometry args={[size.w, size.d]} />
@@ -584,22 +742,30 @@ function Electrical({
         );
       })}
 
-      {idlePaths.length > 0 ? (
-        <CableBatch
-          paths={idlePaths.map((p) => p.points)}
-          color="#6b7280"
+      {[...idleByType.entries()].map(([type, paths]) => (
+        <TypedCableBatch
+          key={`idle-${type}`}
+          paths={paths}
+          connectionType={type}
         />
-      ) : null}
+      ))}
       {activePaths.length > 0 ? (
-        <CableBatch
+        <TypedCableBatch
           paths={activePaths.map((p) => p.points)}
-          color="#e6740a"
+          connectionType={activePaths[0]?.connectionType ?? "DC"}
+          active
         />
       ) : null}
       {electricalMode && !electricalPaths?.length ? (
         <>
-          <CableBatch paths={layout.dcFeeders.slice(0, 60)} color="#64748b" />
-          <CableBatch paths={layout.acCables.slice(0, 40)} color="#94a3b8" />
+          <TypedCableBatch
+            paths={layout.dcFeeders.slice(0, 80)}
+            connectionType="DC"
+          />
+          <TypedCableBatch
+            paths={layout.acCables.slice(0, 50)}
+            connectionType="AC_MV"
+          />
         </>
       ) : null}
       {highlightedIds ? null : null}
@@ -907,7 +1073,7 @@ export function SiteModel({
   onSelectAsset?: (assetId: string | null) => void;
   highlightedAssetIds?: Set<string> | null;
   electricalMode?: boolean;
-  electricalPaths?: Array<{ points: [number, number, number][]; active?: boolean }>;
+  electricalPaths?: TwinElectricalPath[];
 }) {
   const isHighlighted = (assetId?: string) =>
     Boolean(assetId && highlightedAssetIds?.has(assetId));
@@ -923,6 +1089,7 @@ export function SiteModel({
         layout={layout}
         selectedAssetId={selectedAssetId}
         onSelectAsset={onSelectAsset}
+        electricalMode={electricalMode}
       />
       <Electrical
         layout={layout}

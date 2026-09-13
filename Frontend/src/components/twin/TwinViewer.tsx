@@ -1,8 +1,10 @@
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Box, Zap } from "lucide-react";
+import { Box, Maximize2, Minimize2, Zap } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
+import { iconButtonClass } from "@/components/dashboard/panel";
 import { useAssetSelection } from "@/hooks/useAssetSelection";
+import { usePanelFullscreen } from "@/hooks/usePanelFullscreen";
 import type { TwinRecord } from "@/lib/api";
 import type { ElectricalPath } from "@/lib/electricalModel";
 import { buildPlantTwinModel } from "@/lib/plantTwin";
@@ -53,6 +55,11 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   const hydratedUrl = useRef(false);
   const [electricalMode, setElectricalMode] = useState(false);
   const [tracedPath, setTracedPath] = useState<ElectricalPath | null>(null);
+  const {
+    ref: fullscreenRef,
+    active: fullscreen,
+    toggle: toggleFullscreen,
+  } = usePanelFullscreen();
 
   useEffect(() => {
     if (hydratedUrl.current) return;
@@ -82,7 +89,12 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
   const electrical = assets.electrical;
 
   return (
-    <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-edge bg-page">
+    <div
+      ref={fullscreenRef as React.RefObject<HTMLDivElement>}
+      className={`relative min-h-0 flex-1 overflow-hidden border border-edge bg-page ${
+        fullscreen ? "h-screen w-screen rounded-none" : "rounded-2xl"
+      }`}
+    >
       <div className="absolute inset-0 [&_canvas]:!h-full [&_canvas]:!w-full">
         <TwinErrorBoundary>
           <TwinCanvas
@@ -100,7 +112,7 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
       </div>
 
       <div className="pointer-events-none absolute inset-0">
-        <div className="pointer-events-auto absolute left-3 top-3 max-w-[240px] space-y-2 sm:left-4 sm:top-4">
+        <div className="pointer-events-auto absolute left-3 top-3 max-h-[calc(100%-5rem)] max-w-[240px] space-y-2 overflow-y-auto overscroll-contain sm:left-4 sm:top-4">
           <div className="rounded-xl border border-edge-strong bg-page/90 px-3 py-2.5 backdrop-blur-sm">
             <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
               <Box className="h-3 w-3" />
@@ -173,7 +185,21 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
           </div>
         </div>
 
-        <div className="pointer-events-auto absolute right-3 top-3 sm:right-4 sm:top-4">
+        <div className="pointer-events-auto absolute right-3 top-3 flex max-h-[calc(100%-5rem)] flex-col items-end gap-2 overflow-y-auto overscroll-contain sm:right-4 sm:top-4">
+          <button
+            type="button"
+            onClick={() => void toggleFullscreen()}
+            className={`${iconButtonClass} bg-page/90 backdrop-blur-sm`}
+            title={fullscreen ? "Exit full screen" : "Full screen"}
+            aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+          >
+            {fullscreen ? (
+              <Minimize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize2 className="h-3.5 w-3.5" />
+            )}
+          </button>
+
           <AssetDetailsPanel
             model={assets}
             selectedAssetId={selectedAssetId}
@@ -188,9 +214,10 @@ export function TwinViewer({ twin, projectName }: TwinViewerProps) {
           />
         </div>
 
-        <p className="absolute bottom-3 left-3 text-[11px] text-muted sm:bottom-4 sm:left-4">
+        <p className="pointer-events-none absolute bottom-3 left-3 max-w-[min(100%,28rem)] text-[11px] text-muted sm:bottom-4 sm:left-4">
           Click an asset · drag to orbit · scroll to zoom
           {electricalMode ? " · electrical connections visible" : ""}
+          {fullscreen ? " · Esc exits full screen" : ""}
         </p>
       </div>
     </div>

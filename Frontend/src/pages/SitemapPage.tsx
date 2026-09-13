@@ -121,7 +121,7 @@ export function SitemapPage() {
       ) : project && twin ? (
         <SitemapViewer twin={twin} projectName={project.name} />
       ) : (
-        <p className="text-sm text-muted">Project not found.</p>
+        <p className="text-sm text-muted">Plant not found.</p>
       )}
     </DashboardShell>
   );

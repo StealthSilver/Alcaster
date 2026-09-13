@@ -1,101 +1,128 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 import { Container } from "@/components/ui/Container";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/cn";
-import { fadeUp, staggerContainer, viewportOnce } from "@/lib/motion";
+import { fadeUp, staggerContainer } from "@/lib/motion";
 
-const TRADITIONAL = [
-  "Data",
-  "Charts",
-  "Tables",
-  "Alerts",
-  "Disconnected views",
-] as const;
-
-const ALCASTER = [
-  "Plant",
-  "3D",
-  "Data",
-  "Simulation",
-  "Analytics",
-  "Operational context",
+const SIGNALS = [
+  {
+    id: "monitor",
+    label: "Monitor",
+    value: "SCADA · alerts · events",
+    detail:
+      "Watch plant state on mimics and signal boards that know which asset is talking.",
+  },
+  {
+    id: "measure",
+    label: "Measure",
+    value: "CMS · KPI · performance",
+    detail:
+      "Track generation, availability, and targets from portfolio down to the site.",
+  },
+  {
+    id: "anticipate",
+    label: "Anticipate",
+    value: "Forecast · weather context",
+    detail:
+      "Read expected generation against the plant you already modeled, not a separate spreadsheet.",
+  },
+  {
+    id: "decide",
+    label: "Decide",
+    value: "Rules · explorer · twin",
+    detail:
+      "Open the twin, query the series, and let rules flag conditions before they escalate.",
+  },
 ] as const;
 
 export function WhyAlcaster() {
-  return (
-    <section id="resources" className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden py-6 sm:py-8">
-      <Container>
-        <SectionHeading
-          eyebrow="Why Alcaster"
-          title="Not another monitoring dashboard."
-          description="Monitoring shows numbers. A digital twin shows the plant — spatially, operationally, and as one system."
-          align="center"
-          className="max-w-2xl"
-        />
+  const reduced = usePrefersReducedMotion();
+  const [active, setActive] = useState(0);
 
+  return (
+    <section
+      id="resources"
+      className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden bg-transparent py-6 sm:py-8"
+    >
+      <Container className="relative">
         <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="mx-auto mt-8 grid max-w-4xl gap-5 sm:grid-cols-[1fr_auto_1fr] sm:items-stretch sm:gap-8 lg:mt-10"
+          variants={reduced ? undefined : staggerContainer}
+          initial={reduced ? false : "hidden"}
+          animate={reduced ? undefined : "visible"}
+          className="mx-auto max-w-4xl"
         >
-          <motion.div variants={fadeUp} className="flex flex-col">
-            <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.18em] text-white/35">
-              Traditional Monitoring
-            </p>
-            <div className="flex flex-1 flex-col gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
-              {TRADITIONAL.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-lg border border-white/[0.06] bg-[#010609]/50 px-4 py-2.5 text-sm text-white/45"
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          </motion.div>
+          <motion.p
+            variants={reduced ? undefined : fadeUp}
+            className="font-mono text-[11px] tracking-[0.24em] text-[#e6740a]/90 uppercase"
+          >
+            Operate
+          </motion.p>
+          <motion.h2
+            variants={reduced ? undefined : fadeUp}
+            className="font-display mt-3 text-balance text-3xl font-medium tracking-[-0.03em] text-white sm:text-4xl"
+          >
+            Built for how a plant is actually run.
+          </motion.h2>
+          <motion.p
+            variants={reduced ? undefined : fadeUp}
+            className="mt-3 max-w-2xl text-sm leading-relaxed text-white/50 sm:text-base"
+          >
+            Monitoring alone shows numbers. Alcaster keeps the twin, the
+            electrical model, and the operating surfaces in one workspace, so
+            context never leaves the plant.
+          </motion.p>
 
           <motion.div
-            variants={fadeUp}
-            className="flex items-center justify-center py-2 sm:py-0"
-            aria-hidden
+            variants={reduced ? undefined : fadeUp}
+            className="mt-10 grid gap-px bg-white/[0.08] sm:grid-cols-2"
           >
-            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#e6740a]/80">
-              VS
-            </span>
-          </motion.div>
-
-          <motion.div variants={fadeUp} className="flex flex-col">
-            <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.18em] text-[#e6740a]/90">
-              Alcaster
-            </p>
-            <div
-              className={cn(
-                "relative flex flex-1 flex-col gap-2 overflow-hidden rounded-xl border border-[#e6740a]/25 bg-[#e6740a]/[0.06] p-4",
-              )}
-            >
-              <div
-                className="pointer-events-none absolute -right-10 top-0 h-32 w-32 rounded-full bg-[#e6740a]/12 blur-2xl"
-                aria-hidden
-              />
-              {ALCASTER.map((item, i) => (
-                <div
-                  key={item}
+            {SIGNALS.map((signal, index) => {
+              const selected = index === active;
+              return (
+                <button
+                  key={signal.id}
+                  type="button"
+                  onMouseEnter={() => setActive(index)}
+                  onFocus={() => setActive(index)}
+                  onClick={() => setActive(index)}
                   className={cn(
-                    "relative rounded-lg border px-4 py-2.5 text-sm font-medium",
-                    i === 0
-                      ? "border-[#e6740a]/40 bg-[#e6740a]/15 text-white"
-                      : "border-white/[0.08] bg-[#010609]/40 text-white/80",
+                    "relative bg-[#010609]/55 px-5 py-5 text-left transition-colors duration-500 ease-out sm:px-6 sm:py-6",
+                    selected ? "bg-[#071018]/90" : "hover:bg-[#050d12]/80",
                   )}
                 >
-                  {item}
-                </div>
-              ))}
-            </div>
+                  <span
+                    className={cn(
+                      "absolute top-0 left-0 h-full w-0.5 transition-colors duration-500",
+                      selected ? "bg-[#e6740a]" : "bg-transparent",
+                    )}
+                    aria-hidden
+                  />
+                  <span className="font-mono text-[10px] tracking-[0.2em] text-white/30 uppercase">
+                    {signal.label}
+                  </span>
+                  <span
+                    className={cn(
+                      "mt-3 block font-display text-xl font-medium tracking-[-0.02em] transition-colors duration-500 sm:text-2xl",
+                      selected ? "text-white" : "text-white/70",
+                    )}
+                  >
+                    {signal.value}
+                  </span>
+                  <span
+                    className={cn(
+                      "mt-3 block text-sm leading-relaxed transition-opacity duration-500",
+                      selected ? "text-white/50 opacity-100" : "text-white/35 opacity-80",
+                    )}
+                  >
+                    {signal.detail}
+                  </span>
+                </button>
+              );
+            })}
           </motion.div>
         </motion.div>
       </Container>

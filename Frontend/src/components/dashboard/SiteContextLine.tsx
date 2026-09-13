@@ -17,7 +17,13 @@ export function SiteContextLine({ site }: { site: Site }) {
   );
 }
 
-function SiteInfoButton({ site }: { site: Site }) {
+export function SiteInfoButton({
+  site,
+  className = "",
+}: {
+  site: Site;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -65,7 +71,10 @@ function SiteInfoButton({ site }: { site: Site }) {
         ref={buttonRef}
         type="button"
         onClick={toggle}
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-subtle transition-colors hover:bg-fill hover:text-fg"
+        className={[
+          "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-subtle transition-colors hover:bg-fill hover:text-fg",
+          className,
+        ].join(" ")}
         aria-label="View site info"
         title="Site info"
       >
@@ -101,7 +110,7 @@ function SiteInfoButton({ site }: { site: Site }) {
                   value={site.organizationName || "—"}
                 />
                 <InfoRow
-                  label="Projects"
+                  label="Plants"
                   value={String(site.projectCount)}
                 />
                 <div>

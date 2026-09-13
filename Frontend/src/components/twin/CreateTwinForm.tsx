@@ -293,7 +293,7 @@ export function CreateTwinForm({
           <h2 className={`mt-0.5 ${sectionTitleClass}`}>{phase.title}</h2>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
           <div className="grid grid-cols-1 items-start gap-x-4 gap-y-3 sm:grid-cols-2">
             {visible.map((field) => {
               const error = fields[field.key];

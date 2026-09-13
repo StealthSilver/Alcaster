@@ -4,9 +4,10 @@
   --alcaster-bg: #010609;
   --alcaster-white: #ffffff;
   --alcaster-orange: #e6740a;
+  --alcaster-ink: #c8d0d4;
   --background: #010609;
   --foreground: #ffffff;
-  --landing-nav-h: 4.25rem;
+  --landing-nav-h: 4rem;
 }
 
 @theme inline {
@@ -16,6 +17,8 @@
   --color-alcaster-white: var(--alcaster-white);
   --color-alcaster-orange: var(--alcaster-orange);
   --font-sans: var(--font-inter);
+  --font-display: var(--font-space);
+  --font-mono: var(--font-plex);
 }
 
 html {
@@ -63,22 +66,31 @@ body {
   outline-offset: 3px;
 }
 
-/* Technical grid utility used across landing surfaces */
-.alcaster-grid {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
+.font-display {
+  font-family: var(--font-space), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-.alcaster-radial {
+.font-mono {
+  font-family: var(--font-plex), ui-monospace, monospace;
+}
+
+/* Horizon atmosphere — plant elevation feel, not decorative blobs */
+.alcaster-horizon {
   background:
-    radial-gradient(ellipse 55% 40% at 70% 35%, rgba(230, 116, 10, 0.08), transparent 70%),
-    radial-gradient(ellipse 40% 30% at 20% 70%, rgba(255, 255, 255, 0.03), transparent 65%);
+    radial-gradient(ellipse 90% 45% at 50% 108%, rgba(230, 116, 10, 0.14), transparent 58%),
+    linear-gradient(180deg, #010609 0%, #041018 48%, #010609 100%);
 }
 
-/* Subtle energy flow dash animation for SVG paths */
+.alcaster-scan {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.012) 3px,
+    rgba(255, 255, 255, 0.012) 4px
+  );
+}
+
 @keyframes alcaster-dash {
   to {
     stroke-dashoffset: -120;
@@ -117,10 +129,44 @@ body {
   animation: alcaster-float 6s ease-in-out infinite;
 }
 
+@keyframes alcaster-reveal-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.alcaster-reveal-line {
+  transform-origin: left center;
+  animation: alcaster-reveal-line 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes alcaster-tick {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.alcaster-tick {
+  animation: alcaster-tick 2.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .alcaster-flow-dash,
   .alcaster-pulse-soft,
-  .alcaster-float {
+  .alcaster-float,
+  .alcaster-reveal-line,
+  .alcaster-tick {
     animation: none !important;
+  }
+
+  .alcaster-reveal-line {
+    transform: none;
   }
 }

@@ -5,22 +5,17 @@ import {
   taskStatusLabel,
 } from "@/lib/labels";
 
-import { panelClass, sectionHintClass, sectionTitleClass } from "./panel";
+import { panelClass, sectionTitleClass } from "./panel";
 
 type RecentTasksProps = {
   tasks: TaskItem[];
-  subtitle?: string;
 };
 
-export function RecentTasks({
-  tasks,
-  subtitle = "Latest work across projects",
-}: RecentTasksProps) {
+export function RecentTasks({ tasks }: RecentTasksProps) {
   return (
     <section className={panelClass} aria-label="Recent tasks">
       <div className="border-b border-edge px-4 py-3">
         <h2 className={sectionTitleClass}>Recent tasks</h2>
-        <p className={sectionHintClass}>{subtitle}</p>
       </div>
 
       {tasks.length === 0 ? (

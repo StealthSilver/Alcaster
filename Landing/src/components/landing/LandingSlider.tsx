@@ -157,7 +157,7 @@ export function LandingSlider({ children }: LandingSliderProps) {
           return (
             <div
               key={panel?.id ?? index}
-              className="h-full min-h-0 w-screen shrink-0 overflow-hidden"
+              className="h-full min-h-0 w-screen shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain"
               aria-hidden={!active}
               {...(active ? {} : { inert: true })}
             >

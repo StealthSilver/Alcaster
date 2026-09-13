@@ -1,304 +1,172 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { Container } from "@/components/ui/Container";
-import { SectionHeading } from "@/components/ui/SectionHeading";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/cn";
-import {
-  duration,
-  easeOut,
-  fadeUp,
-  staggerContainer,
-  staggerFast,
-  viewportOnce,
-} from "@/lib/motion";
+import { fadeUp, staggerContainer } from "@/lib/motion";
 
 const LAYERS = [
-  "Plant structure",
-  "Equipment",
-  "Location",
-  "Connections",
-  "Operational state",
-  "Weather",
-  "Telemetry",
-  "Analytics",
-] as const;
-
-const NODES = [
   {
-    id: "physical",
-    label: "Real Plant",
-    sub: "Physical assets & systems",
-    x: 18,
+    id: "structure",
+    label: "Plant structure",
+    detail:
+      "Sites, capacity, and plant identity become the shared substrate every product reads from.",
+  },
+  {
+    id: "electrical",
+    label: "Electrical model",
+    detail:
+      "Sitemap and single-line diagrams map arrays, inverters, transformers, and grid ties.",
   },
   {
     id: "twin",
-    label: "Digital Twin",
-    sub: "Unified spatial model",
-    x: 50,
-    accent: true,
+    label: "Spatial twin",
+    detail:
+      "A 3D plant twin mirrors equipment layout so operators inspect assets in context, not in tables alone.",
   },
   {
-    id: "data",
-    label: "Data + Simulation",
-    sub: "Live state & foresight",
-    x: 82,
+    id: "scada",
+    label: "SCADA & telemetry",
+    detail:
+      "Live mimic views and plant signals attach to the same model the twin and dashboards use.",
+  },
+  {
+    id: "analytics",
+    label: "KPI & performance",
+    detail:
+      "CMS dashboards, KPI boards, and performance charts report against the plant you already defined.",
+  },
+  {
+    id: "foresight",
+    label: "Forecast & rules",
+    detail:
+      "Generation outlook, data explorer, and a rule engine sit on top of the connected plant record.",
   },
 ] as const;
 
-function TwinBridgeVisual({ reduced }: { reduced: boolean }) {
-  return (
-    <motion.div
-      variants={fadeUp}
-      initial="hidden"
-      whileInView="visible"
-      viewport={viewportOnce}
-      className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#010609]"
-    >
-      <svg
-        viewBox="0 0 720 280"
-        className="relative h-auto w-full"
-        role="img"
-        aria-label="Real plant connected to digital twin connected to data and simulation"
-      >
-        {/* Connection paths */}
-        <path
-          d="M170 140 H290"
-          fill="none"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth="1.5"
-        />
-        <path
-          d="M430 140 H550"
-          fill="none"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth="1.5"
-        />
-        <path
-          d="M170 140 H290"
-          fill="none"
-          stroke="rgba(230,116,10,0.45)"
-          strokeWidth="1.75"
-          strokeDasharray="7 11"
-          className={reduced ? undefined : "alcaster-flow-dash"}
-        />
-        <path
-          d="M430 140 H550"
-          fill="none"
-          stroke="rgba(230,116,10,0.45)"
-          strokeWidth="1.75"
-          strokeDasharray="7 11"
-          className={reduced ? undefined : "alcaster-flow-dash"}
-          style={{ animationDelay: "0.8s" }}
-        />
-
-        {!reduced
-          ? [0, 1, 2].map((i) => (
-              <g key={i}>
-                <motion.circle
-                  r={2.4}
-                  fill="#e6740a"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 1, 1, 0] }}
-                  transition={{
-                    duration: 2.8,
-                    delay: i * 0.9,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
-                >
-                  <animateMotion
-                    dur="2.8s"
-                    begin={`${i * 0.9}s`}
-                    repeatCount="indefinite"
-                    path="M170 140 H290"
-                  />
-                </motion.circle>
-                <motion.circle
-                  r={2.4}
-                  fill="#e6740a"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 1, 1, 0] }}
-                  transition={{
-                    duration: 2.8,
-                    delay: 0.4 + i * 0.9,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
-                >
-                  <animateMotion
-                    dur="2.8s"
-                    begin={`${0.4 + i * 0.9}s`}
-                    repeatCount="indefinite"
-                    path="M430 140 H550"
-                  />
-                </motion.circle>
-              </g>
-            ))
-          : null}
-
-        {NODES.map((node) => {
-          const cx = (node.x / 100) * 720;
-          const isAccent = "accent" in node && node.accent;
-          return (
-            <g key={node.id}>
-              <rect
-                x={cx - 78}
-                y={88}
-                width={156}
-                height={104}
-                rx={14}
-                fill={
-                  isAccent ? "rgba(230,116,10,0.08)" : "rgba(255,255,255,0.03)"
-                }
-                stroke={
-                  isAccent ? "rgba(230,116,10,0.55)" : "rgba(255,255,255,0.12)"
-                }
-                strokeWidth={1.25}
-              />
-              {isAccent && !reduced ? (
-                <motion.circle
-                  cx={cx}
-                  cy={140}
-                  r={36}
-                  fill="rgba(230,116,10,0.06)"
-                  animate={{ opacity: [0.35, 0.75, 0.35], scale: [1, 1.08, 1] }}
-                  transition={{
-                    duration: 3.4,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-              ) : null}
-              <text
-                x={cx}
-                y={128}
-                textAnchor="middle"
-                fill={isAccent ? "#e6740a" : "#ffffff"}
-                fontSize="14"
-                fontWeight="600"
-                fontFamily="Inter, sans-serif"
-              >
-                {node.label}
-              </text>
-              <text
-                x={cx}
-                y={152}
-                textAnchor="middle"
-                fill="rgba(255,255,255,0.42)"
-                fontSize="11"
-                fontFamily="Inter, sans-serif"
-              >
-                {node.sub}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Bidirectional markers */}
-        <text
-          x={230}
-          y={128}
-          textAnchor="middle"
-          fill="rgba(230,116,10,0.7)"
-          fontSize="10"
-          fontFamily="Inter, sans-serif"
-        >
-          ↔
-        </text>
-        <text
-          x={490}
-          y={128}
-          textAnchor="middle"
-          fill="rgba(230,116,10,0.7)"
-          fontSize="10"
-          fontFamily="Inter, sans-serif"
-        >
-          ↔
-        </text>
-      </svg>
-    </motion.div>
-  );
-}
+const DETAIL_EASE = [0.22, 1, 0.36, 1] as const;
 
 export function DigitalTwinSection() {
   const reduced = usePrefersReducedMotion();
+  const [active, setActive] = useState(0);
+  const layer = LAYERS[active] ?? LAYERS[0];
 
   return (
-    <section id="platform" className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden py-6 sm:py-8">
-      <Container>
-        <div className="grid min-h-0 gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-12">
-          <div>
-            <SectionHeading
-              eyebrow="Platform"
-              title="One plant. One digital representation."
-              description="Alcaster models the full stack of plant knowledge — structure through analytics — as a single living twin."
-            />
-
-            <motion.ul
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={viewportOnce}
-              className="mt-6 grid grid-cols-2 gap-2 sm:mt-8 sm:gap-3"
-            >
-              {LAYERS.map((layer, i) => (
-                <motion.li
-                  key={layer}
-                  variants={fadeUp}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl border px-3 py-2.5 sm:px-3.5 sm:py-3",
-                    i % 3 === 0
-                      ? "border-[#e6740a]/25 bg-[#e6740a]/[0.06]"
-                      : "border-white/[0.08] bg-white/[0.02]",
-                  )}
-                >
-                  <span className="text-[10px] font-semibold tabular-nums text-[#e6740a]/80">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="text-sm text-white/75">{layer}</span>
-                </motion.li>
-              ))}
-            </motion.ul>
-          </div>
-
-          <div className="hidden min-h-0 lg:block">
-            <TwinBridgeVisual reduced={reduced} />
-            <motion.p
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={viewportOnce}
-              transition={{ duration: duration.base, ease: easeOut }}
-              className="mt-4 text-sm leading-relaxed text-white/45"
-            >
-              The twin is the shared substrate — physical reality, operational
-              state, and simulation stay connected through one model.
-            </motion.p>
-          </div>
-        </div>
-
+    <section
+      id="platform"
+      className="relative flex h-full min-h-0 flex-col justify-center overflow-hidden bg-transparent py-4 sm:py-8"
+    >
+      <Container className="relative">
         <motion.div
-          variants={staggerFast}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-xs font-medium uppercase tracking-[0.14em] text-white/35 sm:mt-8"
+          variants={reduced ? undefined : staggerContainer}
+          initial={reduced ? false : "hidden"}
+          animate={reduced ? undefined : "visible"}
+          className="grid min-h-0 gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-16"
         >
-          {["Real Plant", "Digital Twin", "Data + Simulation"].map((label, i) => (
-            <motion.span key={label} variants={fadeUp} className="inline-flex items-center gap-3">
-              <span className={i === 1 ? "text-[#e6740a]" : "text-white/55"}>
-                {label}
-              </span>
-              {i < 2 ? (
-                <span className="text-[#e6740a]/60" aria-hidden>
-                  ↔
-                </span>
-              ) : null}
-            </motion.span>
-          ))}
+          <div>
+            <motion.p
+              variants={reduced ? undefined : fadeUp}
+              className="font-mono text-[11px] tracking-[0.24em] text-[#e6740a]/90 uppercase"
+            >
+              Platform
+            </motion.p>
+            <motion.h2
+              variants={reduced ? undefined : fadeUp}
+              className="font-display mt-3 max-w-md text-balance text-3xl font-medium tracking-[-0.03em] text-white sm:text-4xl"
+            >
+              One plant. One digital representation.
+            </motion.h2>
+            <motion.p
+              variants={reduced ? undefined : fadeUp}
+              className="mt-4 max-w-md text-sm leading-relaxed text-white/50 sm:text-base"
+            >
+              Alcaster is not a stack of disconnected tools. Every layer,
+              from structure through foresight, hangs off the same plant model.
+            </motion.p>
+
+            <motion.div
+              variants={reduced ? undefined : fadeUp}
+              className="relative mt-8 hidden min-h-[4.5rem] border-l border-[#e6740a]/70 pl-4 lg:block"
+              aria-live="polite"
+            >
+              <AnimatePresence mode="sync" initial={false}>
+                <motion.p
+                  key={layer.id}
+                  initial={reduced ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={reduced ? undefined : { opacity: 0 }}
+                  transition={{ duration: 0.4, ease: DETAIL_EASE }}
+                  className="absolute inset-y-0 left-4 right-0 text-sm leading-relaxed text-white/45"
+                >
+                  {layer.detail}
+                </motion.p>
+              </AnimatePresence>
+            </motion.div>
+          </div>
+
+          <motion.div variants={reduced ? undefined : fadeUp} className="min-w-0">
+            <div
+              className="relative flex flex-col"
+              role="listbox"
+              aria-label="Platform layers"
+              aria-activedescendant={`layer-${layer.id}`}
+            >
+              {LAYERS.map((item, index) => {
+                const selected = index === active;
+                return (
+                  <button
+                    key={item.id}
+                    id={`layer-${item.id}`}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onMouseEnter={() => setActive(index)}
+                    onFocus={() => setActive(index)}
+                    onClick={() => setActive(index)}
+                    className={cn(
+                      "grid h-11 grid-cols-[2.5rem_1fr] items-center gap-3 border-l px-3 text-left transition-colors duration-300 ease-out",
+                      selected
+                        ? "border-[#e6740a] text-white"
+                        : "border-transparent text-white/45 hover:text-white/70",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "font-mono text-[11px] tabular-nums transition-colors duration-300",
+                        selected ? "text-[#e6740a]" : "text-white/28",
+                      )}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-sm font-medium tracking-tight sm:text-[15px]">
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              className="relative mt-5 min-h-[3.75rem] border-l border-[#e6740a]/70 pl-4 lg:hidden"
+              aria-live="polite"
+            >
+              <AnimatePresence mode="sync" initial={false}>
+                <motion.p
+                  key={layer.id}
+                  initial={reduced ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={reduced ? undefined : { opacity: 0 }}
+                  transition={{ duration: 0.4, ease: DETAIL_EASE }}
+                  className="absolute inset-y-0 left-4 right-0 text-sm leading-relaxed text-white/45"
+                >
+                  {layer.detail}
+                </motion.p>
+              </AnimatePresence>
+            </div>
+          </motion.div>
         </motion.div>
       </Container>
     </section>

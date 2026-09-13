@@ -2,16 +2,14 @@ import { Cloud, Sun, Thermometer, Wind } from "lucide-react";
 
 import type { WeatherConditions } from "@/data/dashboard";
 
-import { panelClass, sectionHintClass, sectionTitleClass } from "./panel";
+import { panelClass, sectionTitleClass } from "./panel";
 
 type WeatherOverviewProps = {
   weather: WeatherConditions;
-  subtitle?: string;
 };
 
 export function WeatherOverview({
   weather,
-  subtitle = "Site environmental inputs linked to generation",
 }: WeatherOverviewProps) {
   const items = [
     {
@@ -44,7 +42,6 @@ export function WeatherOverview({
     <section className={panelClass} aria-label="Current conditions">
       <div className="border-b border-edge px-4 py-3">
         <h2 className={sectionTitleClass}>Conditions</h2>
-        <p className={sectionHintClass}>{subtitle}</p>
       </div>
 
       <div className="grid grid-cols-2 divide-x divide-y divide-edge">

@@ -13,6 +13,12 @@ import {
   type ProjectStatus,
   type ProjectType,
 } from "@/lib/api";
+import {
+  defaultDataEntryState,
+  seedFromPlant,
+  writeDataEntryState,
+} from "@/lib/dataEntryStore";
+import { projectPortfolioPath } from "@/lib/paths";
 
 type FormValues = {
   siteId: string;
@@ -37,13 +43,13 @@ const emptyValues: FormValues = {
 function validate(values: FormValues) {
   const fields: Partial<Record<keyof FormValues, string>> = {};
   if (!values.siteId) fields.siteId = "Select a site.";
-  if (!values.name.trim()) fields.name = "Project name is required.";
-  else if (values.name.trim().length < 2) fields.name = "Enter a project name.";
+  if (!values.name.trim()) fields.name = "Plant name is required.";
+  else if (values.name.trim().length < 2) fields.name = "Enter a plant name.";
   if (!values.location.trim()) fields.location = "Location is required.";
   else if (values.location.trim().length < 2) {
     fields.location = "Enter a location.";
   }
-  if (!values.type) fields.type = "Select a project type.";
+  if (!values.type) fields.type = "Select a plant type.";
   const capacity = Number(values.capacityMw);
   if (values.capacityMw.trim() === "") fields.capacityMw = "Capacity is required.";
   else if (Number.isNaN(capacity) || capacity < 0) {
@@ -102,9 +108,18 @@ export function CreateProjectPage() {
         capacityMw: Number(values.capacityMw),
         description: values.description.trim(),
       }).then(async ({ project }) => {
+        const seeded = defaultDataEntryState();
+        seeded.values.dashboard = {
+          ...seeded.values.dashboard,
+          ...seedFromPlant({
+            operatorName: user?.organizationName ?? undefined,
+            capacityMw: project.capacityMw,
+          }),
+        };
+        writeDataEntryState(project.id, seeded);
         openProject(project);
         await refreshProjects(project.siteId);
-        void navigate(`/projects/${project.id}`, { replace: true });
+        void navigate(projectPortfolioPath(project.id), { replace: true });
       });
     } catch (error) {
       if (error instanceof ApiError) {
@@ -123,10 +138,10 @@ export function CreateProjectPage() {
     : { name: "User", role: "Organization Manager", initials: "U" };
 
   return (
-    <DashboardShell user={shellUser} title="Create project" hideSiteMeta>
+    <DashboardShell user={shellUser} title="Create plant" hideSiteMeta>
       <div className="max-w-2xl">
         <p className="mb-5 text-sm text-muted">
-          Create a project at a site to track plant operations, twins, and performance.
+          Create a plant at a site to track operations, twins, and performance.
         </p>
         <form onSubmit={onSubmit} noValidate className={panelClass}>
           <div className="p-6">
@@ -264,7 +279,7 @@ export function CreateProjectPage() {
                 id="project-description"
                 name="description"
                 rows={3}
-                placeholder="Notes about this project"
+                placeholder="Notes about this plant"
                 value={values.description}
                 onChange={(event) => update("description", event.target.value)}
                 className={formControlClass(
@@ -294,7 +309,7 @@ export function CreateProjectPage() {
                   Creating…
                 </>
               ) : (
-                "Create project"
+                "Create plant"
               )}
             </button>
           </div>

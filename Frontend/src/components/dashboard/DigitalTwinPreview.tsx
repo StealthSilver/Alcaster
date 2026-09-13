@@ -32,9 +32,6 @@ export function DigitalTwinPreview({ href = "/digital-twins" }: DigitalTwinPrevi
           <h2 className="text-sm font-semibold text-fg">
             Digital twin
           </h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Energy path from arrays to grid
-          </p>
         </div>
         <Link
           to={href}

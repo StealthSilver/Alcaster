@@ -12,7 +12,12 @@ import { panelClass } from "@/components/dashboard/panel";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { ApiError, deleteProjectRequest, type Project } from "@/lib/api";
-import { projectHomePath } from "@/lib/paths";
+import {
+  defaultDataEntryState,
+  seedFromPlant,
+  writeDataEntryState,
+} from "@/lib/dataEntryStore";
+import { projectHomePath, projectPortfolioPath } from "@/lib/paths";
 import { canEditProject } from "@/lib/roles";
 
 type LocationState = {
@@ -62,17 +67,31 @@ export function ProjectsPage() {
   }
 
   async function onSaved(project: Project) {
+    const creating = drawer === "create";
     setDrawer(null);
     if (project.siteId !== selectedSite?.id) {
       selectSite(project.siteId);
     }
     await refreshProjects(project.siteId);
+    if (creating) {
+      const seeded = defaultDataEntryState();
+      seeded.values.dashboard = {
+        ...seeded.values.dashboard,
+        ...seedFromPlant({
+          operatorName: user?.organizationName ?? undefined,
+          capacityMw: project.capacityMw,
+        }),
+      };
+      writeDataEntryState(project.id, seeded);
+      openProject(project);
+      void navigate(projectPortfolioPath(project.id));
+    }
   }
 
   return (
     <DashboardShell
       user={shellUser}
-      title="Projects"
+      title="Plants"
       actions={
         <CreateProjectButton
           disabled={!canCreate}
@@ -81,7 +100,7 @@ export function ProjectsPage() {
       }
     >
       {loading ? (
-        <p className="text-sm text-muted">Loading projects…</p>
+        <p className="text-sm text-muted">Loading plants…</p>
       ) : (
         <ProjectTable
           projects={projects}
@@ -150,7 +169,7 @@ function DeleteProjectDialog({
       <button
         type="button"
         className="absolute inset-0 bg-overlay"
-        aria-label="Close delete project dialog"
+        aria-label="Close delete plant dialog"
         onClick={onClose}
       />
       <div
@@ -172,7 +191,7 @@ function DeleteProjectDialog({
             id="delete-project-title"
             className="pr-8 text-sm font-semibold text-fg"
           >
-            Delete project
+            Delete plant
           </h2>
           <p className="mt-1 text-xs text-muted">
             This permanently deletes {project.name} and any twins or tasks under

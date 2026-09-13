@@ -24,6 +24,54 @@ export function projectScadaPath(projectId: string): string {
   return `/projects/${projectId}/scada`;
 }
 
+export function projectAlertsPath(projectId: string): string {
+  return `/projects/${projectId}/alerts`;
+}
+
+export function projectEventsPath(projectId: string): string {
+  return `/projects/${projectId}/events`;
+}
+
+export function projectDataEntryPath(projectId: string): string {
+  return `/projects/${projectId}/data-entry`;
+}
+
+export function projectPortfolioPath(projectId: string): string {
+  return `/projects/${projectId}/portfolio`;
+}
+
+export function projectKpiPath(projectId: string): string {
+  return `/projects/${projectId}/kpi`;
+}
+
+export function projectPerformancePath(projectId: string): string {
+  return `/projects/${projectId}/performance`;
+}
+
+export function projectForecastingPath(projectId: string): string {
+  return `/projects/${projectId}/forecasting`;
+}
+
+export function projectCmmsPath(projectId: string): string {
+  return `/projects/${projectId}/cmms`;
+}
+
+export function projectEmsPath(projectId: string): string {
+  return `/projects/${projectId}/ems`;
+}
+
+export function projectRuleEnginePath(projectId: string): string {
+  return `/projects/${projectId}/rule-engine`;
+}
+
+export function projectDataExplorerPath(projectId: string): string {
+  return `/projects/${projectId}/data-explorer`;
+}
+
+export function projectAssetTwinPath(projectId: string): string {
+  return `/projects/${projectId}/asset-twin`;
+}
+
 export function swapProjectInPath(pathname: string, projectId: string): string {
   return pathname.replace(/^\/projects\/[^/]+/, `/projects/${projectId}`);
 }

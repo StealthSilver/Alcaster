@@ -3,9 +3,9 @@ import type { Transition, Variants } from "framer-motion";
 export const easeOut: Transition["ease"] = [0.22, 1, 0.36, 1];
 
 export const duration = {
-  fast: 0.4,
-  base: 0.55,
-  slow: 0.75,
+  fast: 0.35,
+  base: 0.45,
+  slow: 0.6,
 } as const;
 
 export const viewportOnce = {
@@ -15,11 +15,10 @@ export const viewportOnce = {
 } as const;
 
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: { duration: duration.base, ease: easeOut },
   },
 };
@@ -36,8 +35,8 @@ export const staggerContainer: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.06,
+      staggerChildren: 0.05,
+      delayChildren: 0.04,
     },
   },
 };
@@ -46,8 +45,8 @@ export const staggerFast: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.04,
+      staggerChildren: 0.03,
+      delayChildren: 0.02,
     },
   },
 };

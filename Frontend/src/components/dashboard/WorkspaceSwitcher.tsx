@@ -84,15 +84,15 @@ export function WorkspaceSwitcher({ onNavigate }: WorkspaceSwitcherProps) {
       />
 
       <Switcher
-        label="Project"
+        label="Plant"
         value={
           projectRoute
-            ? (selectedProject?.name ?? "Select project")
-            : "Select project"
+            ? (selectedProject?.name ?? "Select plant")
+            : "Select plant"
         }
         disabled={!selectedSite}
-        searchPlaceholder="Find a project"
-        footer={{ to: "/projects", label: "View all projects" }}
+        searchPlaceholder="Find a plant"
+        footer={{ to: "/projects", label: "View all plants" }}
       >
         {(query) => {
           const q = query.trim().toLowerCase();
@@ -108,8 +108,8 @@ export function WorkspaceSwitcher({ onNavigate }: WorkspaceSwitcherProps) {
             return (
               <p className="px-3 py-2 text-xs text-muted">
                 {q
-                  ? "No matching projects"
-                  : "No projects at this site. Switch the site to see others."}
+                  ? "No matching plants"
+                  : "No plants at this site. Switch the site to see others."}
               </p>
             );
           }

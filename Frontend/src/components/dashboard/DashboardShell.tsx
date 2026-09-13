@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import type { DashboardUser } from "@/data/dashboard";
+import { useDemoDataEntrySeed } from "@/hooks/useDemoDataEntrySeed";
 import { isProjectPath } from "@/lib/paths";
 
 import { useWorkspace } from "@/context/WorkspaceContext";
@@ -15,7 +16,7 @@ import { SiteSidebar } from "./SiteSidebar";
 type DashboardShellProps = {
   children: React.ReactNode;
   user: DashboardUser;
-  title?: string;
+  title?: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
   layout?: "default" | "fill";
@@ -36,6 +37,7 @@ export function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { pathname } = useLocation();
   const { selectedSite } = useWorkspace();
+  useDemoDataEntrySeed();
   const projectNav = isProjectPath(pathname);
   const fill = layout === "fill";
   const siteMeta =
@@ -44,13 +46,9 @@ export function DashboardShell({
     ) : null;
 
   return (
-    <div
-      className={`flex flex-col bg-page font-sans text-fg antialiased ${
-        fill ? "h-screen overflow-hidden" : "min-h-screen"
-      }`}
-    >
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-page font-sans text-fg antialiased">
       <Navbar user={user} onMenuClick={() => setSidebarOpen(true)} />
-      <div className="flex min-h-0 min-w-0 flex-1">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <SiteSidebar
           open={!projectNav && sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -61,39 +59,37 @@ export function DashboardShell({
             onClose={() => setSidebarOpen(false)}
           />
         ) : null}
-        <div
-          className={`flex min-h-0 min-w-0 flex-1 flex-col ${
-            fill ? "overflow-hidden" : ""
-          }`}
-        >
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div
             className={
               fill
                 ? "flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 sm:px-6 lg:px-8"
-                : "mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-6"
+                : "mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 flex-col overflow-hidden px-4 py-5 sm:px-6 lg:px-8 lg:py-6"
             }
           >
             {hideHeader ? null : (
-              <Header
-                title={title}
-                description={
-                  siteMeta || description ? (
-                    <>
-                      {siteMeta}
-                      {description}
-                    </>
-                  ) : null
-                }
-                actions={actions}
-              />
+              <div className="shrink-0">
+                <Header
+                  title={title}
+                  description={
+                    siteMeta || description ? (
+                      <>
+                        {siteMeta}
+                        {description}
+                      </>
+                    ) : null
+                  }
+                  actions={actions}
+                />
+              </div>
             )}
             <main
               className={
                 fill
                   ? "mt-4 flex min-h-0 flex-1 flex-col overflow-hidden"
                   : hideHeader
-                    ? "pb-10"
-                    : "mt-6 pb-10"
+                    ? "min-h-0 flex-1 overflow-y-auto pb-10"
+                    : "mt-6 min-h-0 flex-1 overflow-y-auto pb-10"
               }
             >
               {children}

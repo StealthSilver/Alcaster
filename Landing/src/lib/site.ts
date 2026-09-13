@@ -15,10 +15,10 @@ export const CONTACT_EMAIL = "rajatsaraswat1729@gmail.com";
 export const DEMO_APP_URL = "https://alcaster-w6n5.vercel.app/";
 
 export const SITE_TITLE =
-  "Alcaster — Renewable Energy Digital Twin Platform";
+  "Alcaster - Renewable Energy Digital Twin Platform";
 
 export const SITE_DESCRIPTION =
-  "Alcaster is a renewable energy digital twin platform for creating, visualizing, and managing interactive 3D replicas of solar and other renewable power plants.";
+  "Alcaster is a renewable energy digital twin platform: model the plant, connect SCADA, and run KPI, forecast, alerts, and ops from one living representation.";
 
 export const SITE_KEYWORDS = [
   "Alcaster",

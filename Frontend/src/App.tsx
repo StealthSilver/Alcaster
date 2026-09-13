@@ -1,13 +1,24 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { GuestRoute, ProtectedRoute } from "@/components/auth/AuthRoutes";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { WorkspaceProvider } from "@/context/WorkspaceContext";
+import { projectAlertsPath } from "@/lib/paths";
+import { AlertsPage } from "@/pages/AlertsPage";
 import { AuthPage } from "@/pages/AuthPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { DataEntryPage } from "@/pages/DataEntryPage";
+import { DataExplorerPage } from "@/pages/DataExplorerPage";
 import { DigitalTwinPage } from "@/pages/DigitalTwinPage";
+import { EventsPage } from "@/pages/EventsPage";
+import { ForecastDashboardPage } from "@/pages/ForecastDashboardPage";
+import { KpiDashboardPage } from "@/pages/KpiDashboardPage";
+import { PerformanceDashboardPage } from "@/pages/PerformanceDashboardPage";
+import { PortfolioPage } from "@/pages/PortfolioPage";
+import { ProductPage } from "@/pages/ProductPage";
 import { ProjectDashboardPage } from "@/pages/ProjectDashboardPage";
+import { RuleEnginePage } from "@/pages/RuleEnginePage";
 import { SitemapPage } from "@/pages/SitemapPage";
 import { ProjectsPage } from "@/pages/ProjectsPage";
 import { ProfilePage } from "@/pages/ProfilePage";
@@ -18,6 +29,12 @@ import { UsersPage } from "@/pages/UsersPage";
 import { TeamPage } from "@/pages/TeamPage";
 import { AssignedSitesPage } from "@/pages/AssignedSitesPage";
 import { MapPage } from "@/pages/MapPage";
+
+function MonitoringToAlertsRedirect() {
+  const { projectId } = useParams();
+  if (!projectId) return <Navigate to="/" replace />;
+  return <Navigate to={projectAlertsPath(projectId)} replace />;
+}
 
 export default function App() {
   return (
@@ -44,6 +61,22 @@ export default function App() {
                   element={<ProjectDashboardPage />}
                 />
                 <Route
+                  path="/projects/:projectId/kpi"
+                  element={<KpiDashboardPage />}
+                />
+                <Route
+                  path="/projects/:projectId/performance"
+                  element={<PerformanceDashboardPage />}
+                />
+                <Route
+                  path="/projects/:projectId/data-entry"
+                  element={<DataEntryPage />}
+                />
+                <Route
+                  path="/projects/:projectId/portfolio"
+                  element={<PortfolioPage />}
+                />
+                <Route
                   path="/projects/:projectId/digital-twin"
                   element={<DigitalTwinPage />}
                 />
@@ -56,6 +89,26 @@ export default function App() {
                   element={<ScadaPage />}
                 />
                 <Route
+                  path="/projects/:projectId/cmms"
+                  element={<ProductPage productId="cmms" />}
+                />
+                <Route
+                  path="/projects/:projectId/ems"
+                  element={<ProductPage productId="ems" />}
+                />
+                <Route
+                  path="/projects/:projectId/rule-engine"
+                  element={<RuleEnginePage />}
+                />
+                <Route
+                  path="/projects/:projectId/data-explorer"
+                  element={<DataExplorerPage />}
+                />
+                <Route
+                  path="/projects/:projectId/asset-twin"
+                  element={<ProductPage productId="dt-assets" />}
+                />
+                <Route
                   path="/projects/:projectId/analytics"
                   element={
                     <SectionPage
@@ -65,29 +118,27 @@ export default function App() {
                   }
                 />
                 <Route
+                  path="/projects/:projectId/alerts"
+                  element={<AlertsPage />}
+                />
+                <Route
+                  path="/projects/:projectId/events"
+                  element={<EventsPage />}
+                />
+                <Route
                   path="/projects/:projectId/monitoring"
-                  element={
-                    <SectionPage
-                      title="Monitoring"
-                      description="Health, alarms, and asset status"
-                    />
-                  }
+                  element={<MonitoringToAlertsRedirect />}
                 />
                 <Route
                   path="/projects/:projectId/forecasting"
-                  element={
-                    <SectionPage
-                      title="Forecasting"
-                      description="Generation forecast and weather outlook"
-                    />
-                  }
+                  element={<ForecastDashboardPage />}
                 />
                 <Route
                   path="/projects/:projectId/settings"
                   element={
                     <SectionPage
                       title="Settings"
-                      description="Project configuration and access"
+                      description="Plant configuration and access"
                     />
                   }
                 />

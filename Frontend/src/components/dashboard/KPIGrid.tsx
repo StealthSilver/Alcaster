@@ -10,7 +10,7 @@ type KPIGridProps = {
 export function KPIGrid({ kpis }: KPIGridProps) {
   return (
     <section
-      aria-label="Project KPIs"
+      aria-label="Plant KPIs"
       className={`grid grid-cols-1 overflow-hidden sm:grid-cols-2 md:grid-cols-5 ${panelClass}`}
     >
       {kpis.map((kpi, index) => (

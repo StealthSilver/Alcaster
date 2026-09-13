@@ -401,7 +401,7 @@ function SiteInfoCard({
             </dd>
           </div>
           <div>
-            <dt className="text-muted">Projects</dt>
+            <dt className="text-muted">Plants</dt>
             <dd className="mt-0.5 font-medium text-fg">{site.projectCount}</dd>
           </div>
         </div>

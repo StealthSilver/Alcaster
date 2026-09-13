@@ -137,7 +137,17 @@ export function resolveTwinPlant(
     1,
     Math.round(num(i.tablesPerRow, Math.ceil(totalTables / numberOfRows))),
   );
-  const blockCount = Math.max(1, Math.round(num(i.numberOfSolarBlocks, derived ? Math.max(1, Math.round(spec.capacityMw / 25)) : 1)));
+  const blockCount = Math.max(
+    1,
+    Math.round(
+      num(
+        i.numberOfSolarBlocks,
+        derived
+          ? Math.max(1, Math.round(spec.capacityMw / 10))
+          : 1,
+      ),
+    ),
+  );
   const mountingKind =
     i.mountingKind === "fixed_tilt" || i.mountingKind === "dual_axis"
       ? i.mountingKind

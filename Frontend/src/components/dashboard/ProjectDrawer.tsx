@@ -50,13 +50,13 @@ function valuesFromProject(project: Project): ProjectFormValues {
 function validate(values: ProjectFormValues) {
   const fields: Partial<Record<keyof ProjectFormValues, string>> = {};
   if (!values.siteId) fields.siteId = "Select a site.";
-  if (!values.name.trim()) fields.name = "Project name is required.";
-  else if (values.name.trim().length < 2) fields.name = "Enter a project name.";
+  if (!values.name.trim()) fields.name = "Plant name is required.";
+  else if (values.name.trim().length < 2) fields.name = "Enter a plant name.";
   if (!values.location.trim()) fields.location = "Location is required.";
   else if (values.location.trim().length < 2) {
     fields.location = "Enter a location.";
   }
-  if (!values.type) fields.type = "Select a project type.";
+  if (!values.type) fields.type = "Select a plant type.";
   if (values.capacityMw.trim() === "") fields.capacityMw = "Capacity is required.";
   else {
     const capacity = Number(values.capacityMw);
@@ -155,7 +155,7 @@ export function ProjectDrawer({
   return (
     <Drawer
       open={open}
-      title={editing ? "Edit project" : "Create project"}
+      title={editing ? "Edit plant" : "Create plant"}
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
@@ -180,7 +180,7 @@ export function ProjectDrawer({
             ) : editing ? (
               "Save"
             ) : (
-              "Create project"
+              "Create plant"
             )}
           </button>
         </div>
@@ -230,7 +230,7 @@ export function ProjectDrawer({
 
           <FormField
             id="project-name"
-            label="Project Name"
+            label="Plant Name"
             required
             error={fields.name}
           >
@@ -328,7 +328,7 @@ export function ProjectDrawer({
               id="project-description"
               name="description"
               rows={3}
-              placeholder="Notes about this project"
+              placeholder="Notes about this plant"
               value={values.description}
               onChange={(event) => update("description", event.target.value)}
               className={formControlClass(

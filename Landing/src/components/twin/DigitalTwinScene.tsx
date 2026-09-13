@@ -21,6 +21,9 @@ type DigitalTwinSceneProps = {
   warningId?: PlantEquipmentId | null;
   float?: boolean;
   compact?: boolean;
+  showFlows?: boolean;
+  /** When false, drops the framed card chrome for full-bleed heroes. */
+  framed?: boolean;
 };
 
 export function DigitalTwinScene({
@@ -31,43 +34,55 @@ export function DigitalTwinScene({
   warningId = null,
   float = true,
   compact = false,
+  showFlows = true,
+  framed = true,
 }: DigitalTwinSceneProps) {
   const [selected, setSelected] = useState<PlantEquipmentId | null>(null);
   const reduced = usePrefersReducedMotion();
   const meta = selected ? PLANT_EQUIPMENT[selected] : null;
 
+  const content = (
+    <>
+      <svg
+        viewBox={compact ? "60 40 620 280" : "0 20 720 310"}
+        className="h-auto max-h-full w-full"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="Digital twin of a solar power plant showing arrays, inverters, transformer, substation, and grid"
+      >
+        <PlantModel
+          selectedId={selected}
+          onSelect={interactive ? setSelected : undefined}
+          warningId={warningId}
+          interactive={interactive}
+          showFlows={showFlows}
+        />
+      </svg>
+    </>
+  );
+
   return (
     <div
       className={cn(
-        "relative flex min-h-[280px] flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#010609]",
+        "relative flex min-h-[280px] flex-col overflow-hidden bg-[#010609]",
+        framed && "rounded-2xl border border-white/[0.08]",
         className,
       )}
     >
-      <motion.div
-        className={cn(
-          "relative flex flex-1 items-center justify-center px-2 py-4 sm:px-3 sm:py-6",
-          float && !reduced && "alcaster-float",
-        )}
-        initial={reduced ? false : { opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <svg
-          viewBox={compact ? "60 40 620 280" : "0 20 720 310"}
-          className="h-auto max-h-full w-full"
-          preserveAspectRatio="xMidYMid meet"
-          role="img"
-          aria-label="Digital twin of a solar power plant showing arrays, inverters, transformer, substation, and grid"
+      {float && !reduced ? (
+        <motion.div
+          className="relative flex flex-1 items-center justify-center px-2 py-4 alcaster-float sm:px-3 sm:py-6"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <PlantModel
-            selectedId={selected}
-            onSelect={interactive ? setSelected : undefined}
-            warningId={warningId}
-            interactive={interactive}
-            showFlows
-          />
-        </svg>
-      </motion.div>
+          {content}
+        </motion.div>
+      ) : (
+        <div className="relative flex flex-1 items-center justify-center px-2 py-4 sm:px-3 sm:py-6">
+          {content}
+        </div>
+      )}
 
       {showLabels ? (
         <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-2 sm:left-4 sm:top-4">

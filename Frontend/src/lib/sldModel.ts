@@ -9,6 +9,7 @@ import {
   getConnectedAssets,
   getElectricalPath,
   type ElectricalAssetType,
+  type ElectricalConnectionType,
   type ElectricalModel,
 } from "@/lib/electricalModel";
 
@@ -34,6 +35,7 @@ export type SldEdge = {
   fromId: string;
   toId: string;
   connectionId?: string;
+  connectionType?: ElectricalConnectionType;
 };
 
 export type SldModel = {
@@ -60,15 +62,15 @@ const ROW_ORDER: ElectricalAssetType[] = [
 ];
 
 const ROW_Y: Record<string, number> = {
-  MODULE: 40,
-  STRING: 120,
-  COMBINER: 200,
-  INVERTER: 280,
-  TRANSFORMER: 360,
-  FEEDER: 440,
-  SUBSTATION: 520,
-  GRID_INTERCONNECTION: 600,
-  AGGREGATE: 40,
+  MODULE: 56,
+  STRING: 156,
+  COMBINER: 256,
+  INVERTER: 356,
+  TRANSFORMER: 456,
+  FEEDER: 556,
+  SUBSTATION: 656,
+  GRID_INTERCONNECTION: 756,
+  AGGREGATE: 56,
 };
 
 const MAX_NODES_PER_ROW = 48;
@@ -112,7 +114,7 @@ function layoutRow(
       byBlock.set(block, list);
     }
     const blocks = [...byBlock.entries()];
-    const width = Math.max(720, blocks.length * 140);
+    const width = Math.max(960, blocks.length * 180);
     const gap = width / (blocks.length + 1);
     return blocks.map(([blockId, members], index) => ({
       id: `agg-${type}-${blockId}`,
@@ -123,8 +125,8 @@ function layoutRow(
       type: "AGGREGATE" as const,
       x: gap * (index + 1),
       y,
-      w: 120,
-      h: 36,
+      w: 156,
+      h: 52,
       count: members.length,
       blockAssetId: blockId === "plant" ? undefined : blockId,
       memberIds: members,
@@ -132,7 +134,7 @@ function layoutRow(
   }
 
   const visible = ids.slice(0, MAX_NODES_PER_ROW);
-  const width = Math.max(720, visible.length * 88);
+  const width = Math.max(960, visible.length * 118);
   const gap = width / (visible.length + 1);
   return visible.map((id, index) => ({
     id,
@@ -141,8 +143,8 @@ function layoutRow(
     type,
     x: gap * (index + 1),
     y,
-    w: type === "SUBSTATION" || type === "GRID_INTERCONNECTION" ? 100 : 72,
-    h: 34,
+    w: type === "SUBSTATION" || type === "GRID_INTERCONNECTION" ? 140 : 104,
+    h: 48,
     blockAssetId: electrical.nodes[id]?.blockAssetId,
   }));
 }
@@ -175,6 +177,7 @@ function buildEdges(
       fromId: fromNode.id,
       toId: toNode.id,
       connectionId: conn.connectionId,
+      connectionType: conn.connectionType,
     });
   }
 
@@ -208,12 +211,37 @@ function buildEdges(
         const key = `${from.id}->${to.id}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        edges.push({ id: key, fromId: from.id, toId: to.id });
+        edges.push({
+          id: key,
+          fromId: from.id,
+          toId: to.id,
+          connectionType: inferRowLinkType(aType, bType),
+        });
       }
     }
   }
 
   return edges;
+}
+
+function inferRowLinkType(
+  fromType: ElectricalAssetType,
+  toType: ElectricalAssetType,
+): ElectricalConnectionType {
+  if (fromType === "MODULE" || toType === "STRING") return "SERIES";
+  if (
+    fromType === "STRING" ||
+    fromType === "COMBINER" ||
+    toType === "COMBINER" ||
+    toType === "INVERTER"
+  ) {
+    return "DC";
+  }
+  if (fromType === "INVERTER" || toType === "TRANSFORMER") return "AC_LV";
+  if (fromType === "TRANSFORMER" || toType === "FEEDER" || toType === "SUBSTATION") {
+    return "AC_MV";
+  }
+  return "HV";
 }
 
 export function buildSldModel(
@@ -315,11 +343,11 @@ export function buildSldModel(
 
   const edges = buildEdges(nodes, electrical);
   const width = Math.max(
-    720,
-    ...nodes.map((n) => n.x + n.w / 2 + 40),
-    800,
+    960,
+    ...nodes.map((n) => n.x + n.w / 2 + 56),
+    1040,
   );
-  const height = 680;
+  const height = 860;
 
   return {
     level,

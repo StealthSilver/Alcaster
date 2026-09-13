@@ -1,11 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { FolderTree, Map, Network, Zap } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import {
+  FolderTree,
+  Maximize2,
+  Minimize2,
+  Map,
+  Network,
+  Scan,
+  ZoomIn,
+  ZoomOut,
+  Zap,
+} from "lucide-react";
 
+import { iconButtonClass } from "@/components/dashboard/panel";
 import { AssetDetailsPanel } from "@/components/twin/AssetDetailsPanel";
+import {
+  DiagramViewport,
+  useDiagramTransform,
+} from "@/components/sitemap/DiagramViewport";
 import { SitemapDiagram } from "@/components/sitemap/SitemapDiagram";
 import { SitemapTree } from "@/components/sitemap/SitemapTree";
-import { SingleLineDiagram } from "@/components/sitemap/SingleLineDiagram";
+import { SingleLineDiagramCanvas } from "@/components/sitemap/SingleLineDiagram";
 import { useAssetSelection } from "@/hooks/useAssetSelection";
+import { usePanelFullscreen } from "@/hooks/usePanelFullscreen";
 import type { TwinRecord } from "@/lib/api";
 import { buildElectricalTree } from "@/lib/electricalTree";
 import type { ElectricalPath } from "@/lib/electricalModel";
@@ -36,6 +52,12 @@ const statusColor: Record<SitemapStatus, string> = {
   OFFLINE: "#f07167",
 };
 
+const VIEW_SCALE: Record<ViewMode, number> = {
+  map: 1,
+  tree: 1,
+  sld: 1.35,
+};
+
 export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
   const model = useMemo(() => buildSitemapModel(twin), [twin]);
   const physicalTree = useMemo(() => buildSitemapTree(model), [model]);
@@ -44,6 +66,19 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
     [model.assets],
   );
   const frameRef = useRef<HTMLDivElement>(null);
+  const {
+    ref: fullscreenRef,
+    active: fullscreen,
+    toggle: toggleFullscreen,
+  } = usePanelFullscreen();
+  const {
+    transform,
+    setTransform,
+    zoomBy,
+    zoomIn,
+    zoomOut,
+    resetForView,
+  } = useDiagramTransform(1);
   const [view, setView] = useState<ViewMode>("map");
   const [treeMode, setTreeMode] = useState<TreeMode>("physical");
   const [sldLevel, setSldLevel] = useState<SldLevel>("plant");
@@ -75,6 +110,11 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
     setTracedPath(null);
   }, [twin.id]);
 
+  function setFrameNode(node: HTMLDivElement | null) {
+    frameRef.current = node;
+    (fullscreenRef as MutableRefObject<HTMLElement | null>).current = node;
+  }
+
   function handleHover(id: string | null) {
     setHoveredId(id);
     if (id) {
@@ -103,12 +143,24 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
 
   function setViewMode(next: ViewMode) {
     setView(next);
+    resetForView(VIEW_SCALE[next]);
   }
+
+  const zoomEnabled = view === "map" || view === "sld";
+
+  const hint =
+    view === "map"
+      ? "Scroll to zoom · drag to pan · click a component"
+      : view === "sld"
+        ? "Scroll to zoom · drag to pan · click a node for asset details"
+        : "Expand folders · select a node for details";
 
   return (
     <div
-      ref={frameRef}
-      className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-edge bg-page"
+      ref={setFrameNode}
+      className={`relative min-h-0 flex-1 overflow-hidden border border-edge bg-page ${
+        fullscreen ? "h-screen w-screen rounded-none" : "rounded-2xl"
+      }`}
       onMouseMove={(event) => {
         if (view !== "map") return;
         const box = frameRef.current?.getBoundingClientRect();
@@ -120,15 +172,24 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
       }}
     >
       {view === "map" ? (
-        <div className="absolute inset-0 pb-[88px] pt-1">
-          <SitemapDiagram
-            model={model}
-            hoveredId={hoveredId}
-            hoveredKind={hoveredId ? null : hoveredKind}
-            selectedId={selectedAssetId}
-            onHover={handleHover}
-            onSelect={selectFromMap}
-          />
+        <div className="absolute inset-0 pb-[88px]">
+          <DiagramViewport
+            transform={transform}
+            onTransformChange={setTransform}
+            onZoomBy={zoomBy}
+            className="bg-[var(--alcaster-diagram)]"
+          >
+            <div className="h-[min(72vh,680px)] w-[min(92vw,1080px)]">
+              <SitemapDiagram
+                model={model}
+                hoveredId={hoveredId}
+                hoveredKind={hoveredId ? null : hoveredKind}
+                selectedId={selectedAssetId}
+                onHover={handleHover}
+                onSelect={selectFromMap}
+              />
+            </div>
+          </DiagramViewport>
         </div>
       ) : null}
 
@@ -145,16 +206,22 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
 
       {view === "sld" ? (
         <div className="absolute inset-0 pb-3 pt-14 pr-[min(252px,42%)] sm:pt-16">
-          <SingleLineDiagram
-            model={model.assets}
-            selectedAssetId={selectedAssetId}
-            highlightedIds={pathHighlight}
-            level={sldLevel}
-            onLevelChange={setSldLevel}
-            onSelect={(assetId) =>
-              selectAsset(assetId, { source: "sitemap", focus3d: true })
-            }
-          />
+          <DiagramViewport
+            transform={transform}
+            onTransformChange={setTransform}
+            onZoomBy={zoomBy}
+            className="rounded-xl border border-edge bg-[color-mix(in_oklab,var(--alcaster-page)_92%,#1a1f24)]"
+          >
+            <SingleLineDiagramCanvas
+              model={model.assets}
+              selectedAssetId={selectedAssetId}
+              highlightedIds={pathHighlight}
+              level={sldLevel}
+              onSelect={(assetId) =>
+                selectAsset(assetId, { source: "sitemap", focus3d: true })
+              }
+            />
+          </DiagramViewport>
         </div>
       ) : null}
 
@@ -216,6 +283,29 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
               </div>
             </div>
           ) : null}
+          {view === "sld" ? (
+            <div className="pointer-events-auto mt-2 rounded-xl border border-edge-strong bg-page/90 p-0.5 backdrop-blur-sm">
+              <div className="flex" role="group" aria-label="SLD level">
+                {(["plant", "block", "asset"] as SldLevel[]).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setSldLevel(id);
+                      resetForView(VIEW_SCALE.sld);
+                    }}
+                    className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-medium capitalize ${
+                      sldLevel === id
+                        ? "bg-fill-strong text-fg"
+                        : "text-muted hover:text-fg"
+                    }`}
+                  >
+                    {id}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {view === "map" && pathHighlight && selectedAssetId ? (
             <div className="pointer-events-auto mt-2 max-h-40 overflow-y-auto rounded-xl border border-edge-strong bg-page/90 px-3 py-2 backdrop-blur-sm">
               <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-accent">
@@ -246,7 +336,56 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
         </div>
 
         <div className="pointer-events-auto absolute right-3 top-3 flex w-[236px] flex-col items-stretch gap-2 sm:right-4 sm:top-4">
-          <ViewToggle view={view} onChange={setViewMode} />
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <ViewToggle view={view} onChange={setViewMode} />
+            {zoomEnabled ? (
+              <div className="inline-flex items-center gap-0.5 rounded-xl border border-edge-strong bg-page/90 p-1 backdrop-blur-sm">
+                <button
+                  type="button"
+                  onClick={zoomOut}
+                  className={iconButtonClass}
+                  title="Zoom out"
+                  aria-label="Zoom out"
+                >
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </button>
+                <span className="min-w-[2.75rem] text-center text-[11px] tabular-nums text-muted">
+                  {Math.round(transform.scale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={zoomIn}
+                  className={iconButtonClass}
+                  title="Zoom in"
+                  aria-label="Zoom in"
+                >
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => resetForView(VIEW_SCALE[view])}
+                  className={iconButtonClass}
+                  title="Fit view"
+                  aria-label="Fit view"
+                >
+                  <Scan className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void toggleFullscreen()}
+              className={`${iconButtonClass} bg-page/90 backdrop-blur-sm`}
+              title={fullscreen ? "Exit full screen" : "Full screen"}
+              aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+            >
+              {fullscreen ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
           <AssetDetailsPanel
             model={model.assets}
             selectedAssetId={
@@ -279,7 +418,12 @@ export function SitemapViewer({ twin, projectName }: SitemapViewerProps) {
               }}
             />
           </div>
-        ) : null}
+        ) : (
+          <p className="pointer-events-none absolute bottom-3 left-3 max-w-[min(100%,28rem)] text-[11px] text-muted sm:bottom-4 sm:left-4">
+            {hint}
+            {fullscreen ? " · Esc exits full screen" : ""}
+          </p>
+        )}
       </div>
 
       {view === "map" && hovered ? (
@@ -303,7 +447,7 @@ function ViewToggle({
 }) {
   return (
     <div
-      className="inline-flex self-end rounded-lg border border-edge-strong bg-page/90 p-0.5 backdrop-blur-sm"
+      className="inline-flex rounded-xl border border-edge-strong bg-page/90 p-1 backdrop-blur-sm"
       role="group"
       aria-label="Sitemap view"
     >

@@ -32,7 +32,7 @@ export function ProjectTable({
   if (projects.length === 0) {
     return (
       <div className="rounded-md border border-edge bg-surface px-4 py-12 text-center text-sm text-muted">
-        No projects at this site yet. Create a project to get started.
+        No plants at this site yet. Create a plant to get started.
       </div>
     );
   }
@@ -109,8 +109,8 @@ export function ProjectTable({
                       disabled={!canEdit}
                       title={
                         canEdit
-                          ? "Edit project"
-                          : "You do not have permission to edit projects."
+                          ? "Edit plant"
+                          : "You do not have permission to edit plants."
                       }
                       onClick={() => onEdit(project)}
                       className={`${actionClass} border border-edge-strong text-secondary hover:bg-fill hover:text-fg`}
@@ -122,8 +122,8 @@ export function ProjectTable({
                       disabled={!canDelete}
                       title={
                         canDelete
-                          ? "Delete project"
-                          : "You do not have permission to delete projects."
+                          ? "Delete plant"
+                          : "You do not have permission to delete plants."
                       }
                       onClick={() => onDelete(project)}
                       className={`${actionClass} border border-edge-strong text-danger hover:bg-danger/10`}

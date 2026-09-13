@@ -19,31 +19,31 @@ function toKpis(data: DashboardPayload): PortfolioKPI[] {
   return [
     {
       id: "total",
-      label: "Projects",
+      label: "Plants",
       value: kpis.totalProjects,
       supporting: `${kpis.completed} completed`,
-      tooltip: "Projects at the selected site",
+      tooltip: "Plants at the selected site",
     },
     {
       id: "active",
       label: "Active",
       value: kpis.active,
       supporting: "In operation",
-      tooltip: "Projects marked active",
+      tooltip: "Plants marked active",
     },
     {
       id: "pending",
       label: "Pending",
       value: kpis.pending,
       supporting: "Awaiting kickoff",
-      tooltip: "Projects not yet started",
+      tooltip: "Plants not yet started",
     },
     {
       id: "onHold",
       label: "On hold",
       value: kpis.onHold,
       supporting: "Paused or blocked",
-      tooltip: "Projects paused pending action",
+      tooltip: "Plants paused pending action",
     },
     {
       id: "capacity",
@@ -86,7 +86,7 @@ function SiteSummary({ data }: { data: DashboardPayload }) {
             </span>
           </h2>
           <p className={sectionHintClass}>
-            {site.address} · {site.projectCount} projects
+            {site.address} · {site.projectCount} plants
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -106,7 +106,7 @@ function SiteSummary({ data }: { data: DashboardPayload }) {
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-edge bg-fill-strong sm:grid-cols-4">
         <Meta label="Address" value={site.address} />
-        <Meta label="Projects" value={String(site.projectCount)} />
+        <Meta label="Plants" value={String(site.projectCount)} />
         <Meta label="Organization" value={data.organization.name} />
         <Meta label="Status" value={siteStatusLabel[site.status]} />
       </dl>

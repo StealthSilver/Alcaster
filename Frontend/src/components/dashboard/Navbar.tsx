@@ -3,8 +3,10 @@ import { Bell, LogOut, MapPin, Menu, Search, User, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspace } from "@/context/WorkspaceContext";
 import type { DashboardUser } from "@/data/dashboard";
 import { canManageUsers } from "@/lib/roles";
+import { projectAlertsPath } from "@/lib/paths";
 import { AlcasterLogo } from "@/components/theme/AlcasterLogo";
 import { ThemeMenuItem } from "@/components/theme/ThemeToggle";
 
@@ -23,7 +25,7 @@ type NavbarProps = {
 
 export function Navbar({ user, onMenuClick }: NavbarProps) {
   return (
-    <header className="relative z-50 flex h-14 shrink-0 items-center border-b border-edge bg-nav">
+    <header className="relative z-[90] flex h-14 shrink-0 items-center overflow-visible border-b border-edge bg-nav">
       <button
         type="button"
         onClick={onMenuClick}
@@ -52,7 +54,7 @@ export function Navbar({ user, onMenuClick }: NavbarProps) {
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" />
             <input
               type="search"
-              placeholder="Search projects…"
+              placeholder="Search plants…"
               className={`${compactSearchClass} w-44 lg:w-56`}
             />
           </label>
@@ -68,6 +70,10 @@ function NotificationsMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const { selectedProject } = useWorkspace();
+  const alertsHref = selectedProject
+    ? projectAlertsPath(selectedProject.id)
+    : "/alerts";
 
   useEffect(() => {
     if (!open) return;
@@ -107,15 +113,12 @@ function NotificationsMenu() {
         >
           <div className="border-b border-edge px-3 py-2.5">
             <p className="text-sm font-medium text-fg">Notifications</p>
-            <p className="mt-0.5 text-xs text-muted">
-              Alerts for the selected site and project
-            </p>
           </div>
           <p className="px-3 py-8 text-center text-sm text-muted">
             No new notifications.
           </p>
           <Link
-            to="/alerts"
+            to={alertsHref}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="block border-t border-edge px-3 py-2.5 text-sm text-muted transition-colors hover:bg-fill hover:text-fg"

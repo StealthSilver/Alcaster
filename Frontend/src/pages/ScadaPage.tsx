@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { LayoutDashboard } from "lucide-react";
 
 import { DashboardShell } from "@/components/dashboard";
 import { ScadaViewer } from "@/components/scada/ScadaViewer";
@@ -12,12 +13,16 @@ import {
   type ProjectDashboardPayload,
   type TwinRecord,
 } from "@/lib/api";
+import { ensureDemoDataEntry } from "@/lib/demoDataEntry";
+import { projectHomePath } from "@/lib/paths";
 
 export function ScadaPage() {
   useSyncProjectFromRoute();
   const { projectId } = useParams();
   const { user } = useAuth();
-  const [dashboard, setDashboard] = useState<ProjectDashboardPayload | null>(null);
+  const [dashboard, setDashboard] = useState<ProjectDashboardPayload | null>(
+    null,
+  );
   const [twin, setTwin] = useState<TwinRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +37,7 @@ export function ScadaPage() {
     ])
       .then(([dashboardPayload, twinPayload]) => {
         if (cancelled) return;
+        ensureDemoDataEntry(dashboardPayload.project);
         setDashboard(dashboardPayload);
         setTwin(twinPayload.twin);
         setError(null);
@@ -57,12 +63,50 @@ export function ScadaPage() {
     : { name: "User", role: "Organization Manager", initials: "U" };
 
   const ready = Boolean(dashboard && !loading && !error);
+  const project = dashboard?.project;
 
   return (
     <DashboardShell
       user={shellUser}
-      title="SCADA"
+      hideSiteMeta
+      title={
+        project ? (
+          <nav
+            aria-label="Breadcrumb"
+            className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm"
+          >
+            <Link
+              to={projectHomePath(project.id)}
+              className="inline-flex text-muted transition-colors hover:text-fg"
+              aria-label="Plant home"
+            >
+              <LayoutDashboard className="h-4 w-4" strokeWidth={1.75} />
+            </Link>
+            <span className="text-muted">/</span>
+            <Link
+              to={projectHomePath(project.id)}
+              className="truncate text-muted transition-colors hover:text-fg"
+            >
+              {project.name}
+            </Link>
+            <span className="text-muted">/</span>
+            <span className="truncate font-medium text-fg">SCADA</span>
+          </nav>
+        ) : (
+          "SCADA"
+        )
+      }
       layout={ready ? "fill" : "default"}
+      actions={
+        projectId ? (
+          <Link
+            to={projectHomePath(projectId)}
+            className="inline-flex h-8 items-center rounded-md border border-edge-strong px-3 text-sm text-secondary transition-colors hover:bg-fill hover:text-fg"
+          >
+            CMS dashboard
+          </Link>
+        ) : null
+      }
     >
       {loading ? (
         <p className="text-sm text-muted">Loading SCADA…</p>
@@ -73,7 +117,7 @@ export function ScadaPage() {
       ) : dashboard ? (
         <ScadaViewer dashboard={dashboard} twin={twin} />
       ) : (
-        <p className="text-sm text-muted">Project not found.</p>
+        <p className="text-sm text-muted">Plant not found.</p>
       )}
     </DashboardShell>
   );

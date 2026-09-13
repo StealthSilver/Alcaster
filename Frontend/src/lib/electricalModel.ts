@@ -215,10 +215,14 @@ function midpoint(a?: AssetVec3, b?: AssetVec3): AssetVec3 | undefined {
 
 function pathBetween(a?: AssetVec3, b?: AssetVec3): AssetVec3[] | undefined {
   if (!a || !b) return undefined;
+  // Short elevated pathway — readable in electrical mode without cutting panels.
+  const cableY = 0.55;
   return [
-    { ...a },
-    { x: a.x, y: Math.max(a.y, b.y, 0.3) + 0.2, z: (a.z + b.z) / 2 },
-    { ...b },
+    { x: a.x, y: Math.max(a.y, cableY), z: a.z },
+    { x: a.x, y: cableY, z: a.z },
+    { x: (a.x + b.x) / 2, y: cableY + 0.08, z: (a.z + b.z) / 2 },
+    { x: b.x, y: cableY, z: b.z },
+    { x: b.x, y: Math.max(b.y, cableY), z: b.z },
   ];
 }
 

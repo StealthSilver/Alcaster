@@ -228,11 +228,11 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
   {
     id: "plant",
     label: "Plant",
-    title: "Project / Plant information",
-    note: "Identity and ownership for this twin. Existing project values are filled in; IDs and capacities are generated.",
+    title: "Plant information",
+    note: "Identity and ownership for this twin. Existing plant values are filled in; IDs and capacities are generated.",
     fields: [
       { key: "siteId", label: "Site", type: "select", required: true },
-      { key: "projectName", label: "Project name", type: "text", required: true },
+      { key: "projectName", label: "Plant name", type: "text", required: true },
       { key: "location", label: "Location", type: "text", required: true },
       {
         key: "plantType",
@@ -269,7 +269,7 @@ export const TWIN_PHASES: TwinPhaseConfig[] = [
       { key: "description", label: "Description", type: "textarea" },
       {
         key: "projectId",
-        label: "Project ID",
+        label: "Record ID",
         type: "text",
         required: true,
         readOnly: true,
@@ -1313,7 +1313,7 @@ export function defaultsFromProject(
   const totalTables = Math.max(1, Math.ceil(totalModules / modulesPerTable));
   const numberOfRows = Math.max(1, Math.round(Math.sqrt(totalTables / 1.6)));
   const tablesPerRow = Math.max(1, Math.ceil(totalTables / numberOfRows));
-  const blocks = Math.max(1, Math.round(capacity / 25));
+  const blocks = Math.max(1, Math.round(capacity / 10));
   const inverterRating = existing?.inverterRatingKw ?? 2500;
   const inverters = Math.max(1, Math.round((capacity * 1000) / inverterRating));
   const transformers = Math.max(1, Math.ceil(inverters / 4));
@@ -1532,7 +1532,7 @@ export function applyDerived(
   }
 
   if (capacity > 0 && !touched.numberOfSolarBlocks) {
-    next.numberOfSolarBlocks = String(Math.max(1, Math.round(capacity / 25)));
+    next.numberOfSolarBlocks = String(Math.max(1, Math.round(capacity / 10)));
   }
   const blocks = Number(next.numberOfSolarBlocks);
   if (blocks > 0) {

@@ -13,7 +13,9 @@ import { WhyAlcaster } from "@/components/landing/WhyAlcaster";
 
 function LandingShell() {
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-[#010609] touch-pan-x">
+    <div className="relative h-dvh w-full overflow-hidden touch-pan-x">
+      {/* Fixed shell background stays put while panels slide */}
+      <div className="pointer-events-none absolute inset-0 alcaster-horizon" aria-hidden />
       <LandingLogo />
       <div className="absolute inset-x-0 top-0 bottom-[var(--landing-nav-h)] overflow-hidden">
         <LandingSlider>
